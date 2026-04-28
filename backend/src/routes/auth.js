@@ -33,6 +33,7 @@ const ACCESS_TOKEN_TTL = REQUIREMENTS.security.jwtAccessTtl || '24h';
 const REFRESH_TOKEN_TTL = process.env.JWT_REFRESH_TTL || '7d';
 const ENFORCE_PARK_GEOFENCE =
     process.env.ENFORCE_PARK_GEOFENCE === 'true' || process.env.NODE_ENV === 'production';
+const GEOFENCE_BYPASS_ROLES = new Set(['it_manager', 'admin']);
 
 function getRequestCoordinates(req) {
     const lat = Number(req.body?.lat ?? req.headers['x-user-lat']);
@@ -261,7 +262,9 @@ router.post('/login', [
         }
 
         const coordinates = getRequestCoordinates(req);
-        if (ENFORCE_PARK_GEOFENCE && !coordinates) {
+        const bypassGeofence = GEOFENCE_BYPASS_ROLES.has(user.user_type);
+
+        if (ENFORCE_PARK_GEOFENCE && !coordinates && !bypassGeofence) {
             return res.status(400).json({
                 error: 'Location required',
                 message: 'Latitude and longitude are required for park access validation'
@@ -270,7 +273,7 @@ router.post('/login', [
 
         if (coordinates) {
             const insidePark = await isInsidePark(coordinates.lat, coordinates.lng);
-            if (!insidePark) {
+            if (!insidePark && !bypassGeofence) {
                 return res.status(403).json({
                     error: 'Access denied',
                     message: 'You must be within park boundaries to access SIGTS'
