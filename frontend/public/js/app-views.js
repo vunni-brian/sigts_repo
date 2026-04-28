@@ -44,7 +44,15 @@ function icon(name, className = '') {
         download: '<path d="M12 4v10"/><path d="M8 10l4 4 4-4"/><path d="M4 19h16"/>',
         plus: '<path d="M12 5v14M5 12h14"/>',
         menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
-        note: '<path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4"/><path d="M9 11h6M9 15h6"/>'
+        note: '<path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4"/><path d="M9 11h6M9 15h6"/>',
+        mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+        lock: '<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+        eye: '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+        at: '<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>',
+        check: '<path d="M20 6L9 17l-5-5"/>',
+        arrowRight: '<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>',
+        chevronDown: '<path d="M6 9l6 6 6-6"/>',
+        sparkles: '<path d="M12 3l1.6 4.3L18 9l-4.4 1.7L12 15l-1.6-4.3L6 9l4.4-1.7z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8z"/><path d="M5 14l.7 1.8L8 16.5l-2.3.7L5 19l-.7-1.8L2 16.5l2.3-.7z"/>'
     };
     const content = icons[name] || icons.info;
     return `<svg class="${classes}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${content}</svg>`;
@@ -55,15 +63,54 @@ function getPageTitle(view) {
     return titles[view] || 'Bwindi Tour Guide';
 }
 
-function navigateTo(view) {
-    window.currentView = view;
-    renderView(view);
+const PUBLIC_VIEWS = new Set(['login', 'register']);
+const APP_VIEWS = new Set([
+    'login',
+    'register',
+    'dashboard',
+    'animals',
+    'map',
+    'culture',
+    'sightings',
+    'profile',
+    'info',
+    'ai_chat',
+    'guide_dashboard',
+    'it_dashboard',
+    'intranet'
+]);
+
+function normalizeView(view) {
+    const candidate = String(view || '').trim();
+    return APP_VIEWS.has(candidate) ? candidate : 'dashboard';
+}
+
+function navigateTo(view, options = {}) {
+    const targetView = normalizeView(view);
+    const shouldUpdateHash = options.updateHash !== false;
+
+    if (shouldUpdateHash) {
+        const targetHash = `#${targetView}`;
+        if (window.location.hash !== targetHash) {
+            window.location.hash = targetHash;
+            return;
+        }
+    }
+
+    renderView(targetView, { updateHash: false });
+}
+
+function formatRoleName(role = 'tourist') {
+    return String(role)
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, letter => letter.toUpperCase());
 }
 
 function renderMainLayout(content) {
     const user = Auth.getCurrentUser() || { name: 'Guest', role: 'tourist' };
     const isGuide = user?.role === 'guide' || user?.userType === 'guide';
     const isITManager = user?.role === 'it_manager' || user?.userType === 'it_manager';
+    const roleLabel = formatRoleName(user.role || user.userType || 'tourist');
     
     let navItems = [
         { id: 'dashboard', icon: 'home', label: 'Home' },
@@ -80,7 +127,40 @@ function renderMainLayout(content) {
         navItems.push({ id: 'intranet', icon: 'building', label: 'Intranet' });
     }
     
-    return `<div class="app-container"><button class="sidebar-toggle" onclick="toggleSidebar()">${icon('menu', 'icon-sm')}</button><div class="sidebar"><div class="sidebar-header"><div class="sidebar-logo"><img src="/icons/icon-192.svg" alt="SIGTS logo"></div><div class="sidebar-title">Bwindi SIGTS</div></div><div class="sidebar-profile" onclick="navigateTo('profile')"><div class="sidebar-avatar">${icon('user', 'icon-md')}</div><div class="sidebar-user-info"><div class="sidebar-user-name">${escapeHtml(user.name)}</div><div class="sidebar-user-role">${user.role || 'tourist'}</div></div></div><div class="sidebar-nav">${navItems.map(item => `<div class="nav-item-vertical ${window.currentView === item.id ? 'active' : ''}" onclick="navigateTo('${item.id}')"><div class="nav-icon-vertical">${icon(item.icon, 'icon-md')}</div><div class="nav-label-vertical">${item.label}</div></div>`).join('')}</div><div class="sidebar-logout" onclick="Auth.logout()">${icon('logout', 'icon-md')} Logout</div></div><div class="main-content" onclick="closeSidebar()"><div class="content-header"><h1>${getPageTitle(window.currentView)}</h1><div class="header-right"><button class="icon-btn" onclick="renderView('notifications')">${icon('bell', 'icon-md')}</button></div></div><div class="main-container">${content}</div></div></div>`;
+    return `<div class="app-container">
+        <button class="sidebar-toggle" onclick="toggleSidebar()">${icon('menu', 'icon-sm')}</button>
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><img src="/icons/icon-192.svg" alt="SIGTS logo"></div>
+                <div class="sidebar-title"><span class="sidebar-title-script">Bwindi</span><span>SIGTS</span></div>
+            </div>
+            <div class="sidebar-profile" onclick="navigateTo('profile')">
+                <div class="sidebar-avatar sidebar-avatar-photo" aria-hidden="true"></div>
+                <div class="sidebar-user-info">
+                    <div class="sidebar-user-name">${escapeHtml(user.name)}</div>
+                    <div class="sidebar-user-role">${escapeHtml(roleLabel)}</div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                ${navItems.map(item => `<div class="nav-item-vertical ${window.currentView === item.id ? 'active' : ''}" onclick="navigateTo('${item.id}')"><div class="nav-icon-vertical">${icon(item.icon, 'icon-md')}</div><div class="nav-label-vertical">${item.label}</div></div>`).join('')}
+            </nav>
+            <div class="sidebar-logout" onclick="Auth.logout()">${icon('logout', 'icon-md')} <span>Logout</span></div>
+        </aside>
+        <main class="main-content" onclick="closeSidebar()">
+            <div class="content-header">
+                <h1>${getPageTitle(window.currentView)}</h1>
+                <div class="header-right">
+                    <button class="icon-btn notification-btn" onclick="renderView('notifications')" aria-label="Notifications">${icon('bell', 'icon-md')}<span class="notification-dot">3</span></button>
+                    <button class="header-profile" onclick="navigateTo('profile')" aria-label="Open profile">
+                        <span class="header-avatar" aria-hidden="true"></span>
+                        <span class="header-profile-copy"><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(roleLabel)}</small></span>
+                        ${icon('chevronDown', 'icon-sm')}
+                    </button>
+                </div>
+            </div>
+            <div class="main-container">${content}</div>
+        </main>
+    </div>`;
 }
 
 function getAnimalIconName(animalName = '') {
@@ -98,7 +178,56 @@ async function renderDashboardContent() {
     const animals = await Content.getAnimals();
     const recommendations = await AI.getRecommendations(3);
     const seasonal = await AI.getSeasonalRecommendations();
-    return `<div class="quick-grid"><div class="quick-card quick-photo animals" onclick="navigateTo('animals')"><div class="quick-icon">${icon('paw', 'icon-xl')}</div><div class="quick-label">Animals</div><div class="quick-count">${animals.length} species</div></div><div class="quick-card quick-photo map" onclick="navigateTo('map')"><div class="quick-icon">${icon('map', 'icon-xl')}</div><div class="quick-label">Map</div></div><div class="quick-card quick-photo culture" onclick="navigateTo('culture')"><div class="quick-icon">${icon('book', 'icon-xl')}</div><div class="quick-label">Culture</div></div><div class="quick-card quick-photo info" onclick="navigateTo('info')"><div class="quick-icon">${icon('info', 'icon-xl')}</div><div class="quick-label">Info</div></div></div><div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon('target', 'icon-sm')} AI Recommendations</h3></div><div id="recList">${recommendations.map(r => `<div class="rec-card"><div class="rec-avatar" aria-hidden="true"></div><div class="rec-info"><div class="rec-title">${r.name}</div><div class="rec-match">${Math.round(r.score * 100)}% match</div><div class="rec-reason">${r.reason}</div></div></div>`).join('')}</div></div><div class="dashboard-quote-card"><blockquote>"The best view comes after the hardest climb."</blockquote></div></div><div class="section-card"><div class="section-header"><h3>${icon('leaf', 'icon-sm')} Seasonal: ${seasonal.season === 'dry' ? `${icon('sun', 'icon-sm')} Dry Season` : `${icon('rain', 'icon-sm')} Wet Season`}</h3></div><div class="seasonal-list">${seasonal.recommendations.map(a => `<div class="seasonal-item">• ${a}</div>`).join('')}</div></div>`;
+    const quickCards = [
+        { id: 'animals', iconName: 'paw', label: 'Animals', count: `${animals.length || 3} species`, className: 'animals' },
+        { id: 'map', iconName: 'map', label: 'Map', className: 'map' },
+        { id: 'culture', iconName: 'book', label: 'Culture', className: 'culture' },
+        { id: 'info', iconName: 'info', label: 'Info', className: 'info' }
+    ];
+    const seasonalTitle = seasonal.season === 'dry' ? `${icon('sun', 'icon-sm')} Dry Season` : `${icon('rain', 'icon-sm')} Wet Season`;
+    const seasonalDetails = {
+        'Gorilla Trekking': 'Clearer trails and better long-distance views.',
+        'Bird Watching': 'Active forest birds and strong photography light.',
+        'Cultural Experiences': 'Explore rich traditions and local heritage during the lush season.',
+        'Forest Walks': 'Fresh vegetation, misty trails, and vivid rainforest color.'
+    };
+
+    return `<div class="dashboard-screen">
+        <div class="quick-grid">
+            ${quickCards.map(card => `<button class="quick-card quick-photo ${card.className}" onclick="navigateTo('${card.id}')">
+                <span class="quick-icon">${icon(card.iconName, 'icon-xl')}</span>
+                <span class="quick-label">${card.label}</span>
+                ${card.count ? `<span class="quick-count">${card.count}</span>` : ''}
+            </button>`).join('')}
+        </div>
+        <div class="dashboard-feature-grid">
+            <section class="section-card recommendations-card">
+                <div class="section-header"><h3>${icon('sparkles', 'icon-sm')} AI Recommendations</h3></div>
+                <div id="recList">
+                    ${recommendations.map((r, index) => `<button class="rec-card" onclick="navigateTo('${index === 2 ? 'culture' : 'animals'}')">
+                        <span class="rec-avatar" aria-hidden="true"></span>
+                        <span class="rec-info">
+                            <span class="rec-title">${escapeHtml(r.name)}</span>
+                            <span class="rec-match">${Math.round(r.score * 100)}% match</span>
+                            <span class="rec-reason">${escapeHtml(r.reason)}</span>
+                        </span>
+                        <span class="rec-arrow">${icon('arrowRight', 'icon-sm')}</span>
+                    </button>`).join('')}
+                </div>
+            </section>
+            <aside class="dashboard-quote-card"><blockquote>"The best view comes after the hardest climb."</blockquote></aside>
+        </div>
+        <section class="section-card seasonal-card">
+            <div class="seasonal-copy">
+                <h3>${icon('leaf', 'icon-sm')} Seasonal: ${seasonalTitle}</h3>
+                <ul class="seasonal-list">
+                    ${seasonal.recommendations.map(a => `<li><strong>${escapeHtml(a)}</strong><span>${escapeHtml(seasonalDetails[a] || 'Recommended for current park conditions.')}</span></li>`).join('')}
+                </ul>
+            </div>
+            <div class="seasonal-thumb" aria-hidden="true"></div>
+            <button class="seasonal-action" onclick="navigateTo('culture')">View Suggestions</button>
+        </section>
+    </div>`;
 }
 
 async function renderAnimalsContent() {
@@ -244,9 +373,9 @@ async function renderIntranetDashboard() {
 
 // Modal handlers for Intranet
 window.showAddAnnouncementModal = async function() {
-    const title = prompt('Announcement Title:');
-    const content = prompt('Announcement Content:');
-    const priority = prompt('Priority (high/medium/low):', 'medium');
+    const title = await showPromptDialog('Announcement Title');
+    const content = await showPromptDialog('Announcement Content');
+    const priority = await showPromptDialog('Priority (high/medium/low)', 'medium');
     if (title && content) {
         await Intranet.addAnnouncement(title, content, priority);
         renderView('intranet');
@@ -254,34 +383,42 @@ window.showAddAnnouncementModal = async function() {
 };
 
 window.deleteAnnouncement = async function(id) {
-    if (confirm('Delete this announcement?')) {
+    if (await showConfirmDialog('Delete this announcement?')) {
         await Intranet.deleteAnnouncement(id);
         renderView('intranet');
     }
 };
 
 window.showAddInventoryModal = async function() {
-    const name = prompt('Item Name:');
-    const quantity = prompt('Quantity:');
-    const category = prompt('Category (Equipment/Medical/Communication):');
-    if (name && quantity) {
-        await Intranet.addInventoryItem(name, parseInt(quantity), category);
+    const name = await showPromptDialog('Item Name');
+    const quantity = await showPromptDialog('Quantity');
+    const category = await showPromptDialog('Category (Equipment/Medical/Communication)');
+    const parsedQuantity = Number.parseInt(quantity, 10);
+    if (name && Number.isFinite(parsedQuantity)) {
+        await Intranet.addInventoryItem(name, parsedQuantity, category);
         renderView('intranet');
+        return;
     }
+    showToast('Enter a valid quantity.', 'warning');
 };
 
 window.updateInventoryQuantity = async function(id) {
-    const newQty = prompt('Enter new quantity:');
+    const newQty = await showPromptDialog('Enter new quantity');
     if (newQty !== null) {
-        await Intranet.updateInventoryItem(id, { quantity: parseInt(newQty) });
+        const parsedQuantity = Number.parseInt(newQty, 10);
+        if (!Number.isFinite(parsedQuantity)) {
+            showToast('Quantity must be a number.', 'warning');
+            return;
+        }
+        await Intranet.updateInventoryItem(id, { quantity: parsedQuantity });
         renderView('intranet');
     }
 };
 
 window.showAddEmployeeModal = async function() {
-    const name = prompt('Employee Name:');
-    const role = prompt('Role (e.g., Senior Guide, Ranger):');
-    const department = prompt('Department:');
+    const name = await showPromptDialog('Employee Name');
+    const role = await showPromptDialog('Role (e.g., Senior Guide, Ranger)');
+    const department = await showPromptDialog('Department');
     if (name && role) {
         await Intranet.addEmployee({ name, role, department });
         renderView('intranet');
@@ -321,13 +458,104 @@ function showLoading() {
     }
 }
 
-function renderLoginScreen() {
-    return `<div class="login-container"><div class="login-card"><div class="login-logo"><img src="/icons/icon-192.svg" alt="SIGTS logo"></div><h1 class="login-title">Welcome to Bwindi</h1><p class="login-subtitle">Smart Information Tour Guide System</p><input type="text" id="loginUsername" class="login-input" placeholder="Username"><input type="password" id="loginPassword" class="login-input" placeholder="Password"><button onclick="handleLogin()" class="login-btn">Login</button><button onclick="renderView('register')" class="register-btn">Create Account</button><div class="demo-credentials"><strong>Demo:</strong> "admin" / "password" or "tourist" / "password"</div></div></div>`;
+function ensureFeedbackRoot() {
+    let root = document.getElementById('ui-feedback-root');
+    if (root) return root;
+    root = document.createElement('div');
+    root.id = 'ui-feedback-root';
+    root.className = 'ui-feedback-root';
+    document.body.appendChild(root);
+    return root;
 }
 
-function renderRegisterScreen() {
-    return `<div class="login-container"><div class="login-card"><div class="login-logo">${icon('note', 'icon-xl')}</div><h1 class="login-title">Create Account</h1><input type="text" id="regFullName" placeholder="Full Name"><input type="email" id="regEmail" placeholder="Email"><input type="text" id="regUsername" placeholder="Username"><input type="password" id="regPassword" placeholder="Password"><input type="password" id="regConfirmPassword" placeholder="Confirm Password"><select id="regUserType"><option value="tourist">Tourist</option><option value="guide">Tour Guide</option><option value="it_manager">IT Manager</option></select><button onclick="handleRegistration()" class="login-btn">Register</button><button onclick="renderView('login')" class="register-btn">Back</button></div></div>`;
+function showToast(message, type = 'info') {
+    const root = ensureFeedbackRoot();
+    const toast = document.createElement('div');
+    toast.className = `ui-toast ui-toast-${type}`;
+    toast.textContent = String(message || '');
+    root.appendChild(toast);
+    window.setTimeout(() => toast.classList.add('visible'), 10);
+    window.setTimeout(() => {
+        toast.classList.remove('visible');
+        window.setTimeout(() => toast.remove(), 220);
+    }, 2600);
 }
+
+function showPromptDialog(message, defaultValue = '') {
+    return new Promise((resolve) => {
+        const root = ensureFeedbackRoot();
+        const overlay = document.createElement('div');
+        overlay.className = 'ui-modal-overlay';
+        overlay.innerHTML = `
+            <div class="ui-modal" role="dialog" aria-modal="true">
+                <div class="ui-modal-title">${escapeHtml(message || 'Input required')}</div>
+                <input class="ui-modal-input" type="text" value="${escapeHtml(defaultValue || '')}" />
+                <div class="ui-modal-actions">
+                    <button type="button" class="ui-btn ui-btn-secondary">Cancel</button>
+                    <button type="button" class="ui-btn ui-btn-primary">OK</button>
+                </div>
+            </div>
+        `;
+
+        const input = overlay.querySelector('.ui-modal-input');
+        const [cancelBtn, okBtn] = overlay.querySelectorAll('button');
+
+        const cleanup = (value) => {
+            overlay.remove();
+            resolve(value);
+        };
+
+        cancelBtn.addEventListener('click', () => cleanup(null));
+        okBtn.addEventListener('click', () => cleanup(input?.value ?? ''));
+        overlay.addEventListener('click', (event) => {
+            if (event.target === overlay) cleanup(null);
+        });
+        input?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') cleanup(input.value);
+            if (event.key === 'Escape') cleanup(null);
+        });
+
+        root.appendChild(overlay);
+        input?.focus();
+        input?.select();
+    });
+}
+
+function showConfirmDialog(message) {
+    return new Promise((resolve) => {
+        const root = ensureFeedbackRoot();
+        const overlay = document.createElement('div');
+        overlay.className = 'ui-modal-overlay';
+        overlay.innerHTML = `
+            <div class="ui-modal" role="dialog" aria-modal="true">
+                <div class="ui-modal-title">${escapeHtml(message || 'Please confirm')}</div>
+                <div class="ui-modal-actions">
+                    <button type="button" class="ui-btn ui-btn-secondary">Cancel</button>
+                    <button type="button" class="ui-btn ui-btn-danger">Confirm</button>
+                </div>
+            </div>
+        `;
+
+        const [cancelBtn, confirmBtn] = overlay.querySelectorAll('button');
+        const cleanup = (accepted) => {
+            overlay.remove();
+            resolve(accepted);
+        };
+
+        cancelBtn.addEventListener('click', () => cleanup(false));
+        confirmBtn.addEventListener('click', () => cleanup(true));
+        overlay.addEventListener('click', (event) => {
+            if (event.target === overlay) cleanup(false);
+        });
+
+        root.appendChild(overlay);
+        confirmBtn?.focus();
+    });
+}
+
+window.showToast = showToast;
+window.showPromptDialog = showPromptDialog;
+window.showConfirmDialog = showConfirmDialog;
 
 async function handleRegistration() {
     const result = await Auth.register({
@@ -338,7 +566,7 @@ async function handleRegistration() {
         confirmPassword: document.getElementById('regConfirmPassword')?.value,
         userType: document.getElementById('regUserType')?.value
     });
-    alert(result.message || (result.success ? 'Success! Please login.' : result.error));
+    showToast(result.message || (result.success ? 'Success! Please login.' : result.error), result.success ? 'success' : 'danger');
     if (result.success) renderView('login');
     else renderView('register');
 }
@@ -346,50 +574,59 @@ async function handleRegistration() {
 async function handleLogin() {
     const result = await Auth.login(
         document.getElementById('loginUsername')?.value,
-        document.getElementById('loginPassword')?.value
+        document.getElementById('loginPassword')?.value,
+        document.getElementById('rememberMe')?.checked || false
     );
     if (result.success) renderView('dashboard');
-    else alert('Login failed: ' + result.error);
+    else showToast('Login failed: ' + result.error, 'danger');
+}
+
+function togglePasswordVisibility(inputId, button) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const shouldShow = input.type === 'password';
+    input.type = shouldShow ? 'text' : 'password';
+    button?.setAttribute('aria-label', shouldShow ? 'Hide password' : 'Show password');
 }
 
 async function handleForgotPassword() {
-    const email = prompt('Enter your account email to receive a password reset link');
+    const email = await showPromptDialog('Enter your account email to receive a password reset link');
     if (!email) return;
 
     const result = await Auth.requestPasswordReset(email);
     if (result.success) {
-        alert(result.message || 'If the email exists, a reset link has been sent.');
+        showToast(result.message || 'If the email exists, a reset link has been sent.', 'success');
         return;
     }
 
-    alert('Password reset request failed: ' + (result.error || 'Unknown error'));
+    showToast('Password reset request failed: ' + (result.error || 'Unknown error'), 'danger');
 }
 
 async function handleMFASetup() {
     const setup = await Auth.initializeMFA();
     if (!setup.success) {
-        alert('MFA setup failed: ' + (setup.error || 'Unknown error'));
+        showToast('MFA setup failed: ' + (setup.error || 'Unknown error'), 'danger');
         return;
     }
 
     const preview = setup.secret ? `Secret: ${setup.secret}` : 'Secret generated';
-    alert(`MFA setup initialized.\nAdd this to your authenticator app.\n\n${preview}`);
+    showToast(`MFA setup initialized. ${preview}`, 'info');
 
-    const code = prompt('Enter the 6-digit code from your authenticator app to enable MFA');
+    const code = await showPromptDialog('Enter the 6-digit code from your authenticator app to enable MFA');
     if (!code) return;
 
     const verify = await Auth.verifyMFASetup(code.trim());
     if (!verify.success) {
-        alert('MFA verification failed: ' + (verify.error || 'Invalid code'));
+        showToast('MFA verification failed: ' + (verify.error || 'Invalid code'), 'danger');
         return;
     }
 
-    alert(verify.message || 'MFA enabled successfully.');
+    showToast(verify.message || 'MFA enabled successfully.', 'success');
 }
 
 async function downloadOfflineContent() {
     await Content.downloadOfflineContent();
-    alert('Downloaded!');
+    showToast('Downloaded!', 'success');
 }
 
 function clearAllCache() {
@@ -398,40 +635,40 @@ function clearAllCache() {
 }
 
 function exportData() {
-    alert('Data exported (demo)');
+    showToast('Data exported (demo)', 'info');
 }
 
-function resetApp() {
-    if (confirm('Reset all data?')) {
+async function resetApp() {
+    if (await showConfirmDialog('Reset all data?')) {
         localStorage.clear();
         location.reload();
     }
 }
 
 function addSighting() {
-    alert('Report sighting feature coming soon');
+    showToast('Report sighting feature coming soon', 'info');
 }
 
 async function startTour(tourId) {
     const m = new TourGuideManager();
     await m.startTour(tourId);
     document.getElementById('activeTourPanel').style.display = 'block';
-    alert('Tour started!');
+    showToast('Tour started!', 'success');
 }
 
 async function endActiveTour() {
     const m = new TourGuideManager();
     await m.endTour(m.activeTour?.tour_session_id);
     document.getElementById('activeTourPanel').style.display = 'none';
-    alert('Tour ended');
+    showToast('Tour ended', 'info');
 }
 
 async function quickSighting() {
-    const animal = prompt('Animal seen?');
+    const animal = await showPromptDialog('Animal seen?');
     if (animal) {
         const m = new TourGuideManager();
         await m.quickSighting(animal, 1);
-        alert('Sighting recorded!');
+        showToast('Sighting recorded!', 'success');
     }
 }
 
@@ -442,121 +679,256 @@ async function clockInOut() {
     renderView('guide_dashboard');
 }
 
-function renderLoginScreen() {
-    return `<div class="login-container auth-screen auth-screen-login">
-        <div class="auth-stage">
-            <div class="auth-topbar">
-                <div class="auth-brand">
-                    <div class="auth-brand-mark">${icon('map', 'icon-md')}</div>
-                    <div>
-                        <div class="auth-brand-name">Bwindi SIGTS</div>
-                        <div class="auth-brand-meta">Smart Information Guide Tour System</div>
-                    </div>
+function renderAuthPortal(activeTab = 'login') {
+    const isLogin = activeTab === 'login';
+
+    return `<div class="auth-portal ${isLogin ? 'auth-mode-login' : 'auth-mode-register'}">
+        <aside class="auth-portal-side">
+            <div class="auth-side-brand">
+                <div class="auth-side-logo">${icon('map', 'icon-lg')}</div>
+                <div>
+                    <div class="auth-side-title">Bwindi SIGTS</div>
+                    <div class="auth-side-subtitle">Smart Information Guide Tour System</div>
                 </div>
             </div>
-            <div class="auth-panel">
-                <div class="auth-copy">
-                    <div class="auth-kicker">Welcome</div>
-                    <h1 class="auth-title">Sign In</h1>
-                    <p class="auth-subtitle">Continue your wildlife guide experience with your account.</p>
-                    <p class="auth-switch">Don't have an account? <button class="auth-link-btn" onclick="renderView('register')">Create account</button></p>
-                </div>
-                <div class="auth-form-card">
-                    <label class="auth-field">
-                        <span class="auth-field-label">Email or Username</span>
-                        <input type="text" id="loginUsername" class="auth-input" placeholder="Enter your username">
-                    </label>
-                    <label class="auth-field">
-                        <span class="auth-field-label">Password</span>
-                        <input type="password" id="loginPassword" class="auth-input" placeholder="Enter your password">
-                    </label>
-                    <div class="auth-actions">
-                        <button onclick="handleLogin()" class="auth-primary-btn">Login</button>
-                        <button onclick="handleForgotPassword()" class="auth-secondary-btn">Forgot Password</button>
-                        <button onclick="renderView('register')" class="auth-secondary-btn">Create Account</button>
-                    </div>
-                </div>
+
+            <div class="auth-side-message">
+                <span class="auth-side-kicker">Welcome</span>
+                <h1>Explore Bwindi with confidence.</h1>
+                <p>Access wildlife insights, cultural stories, guide tools, sightings, and secure park information from one clean portal.</p>
             </div>
-            <div class="auth-photo-panel" aria-hidden="true"></div>
-        </div>
+
+            <div class="auth-side-footer">
+                ${icon('shield', 'icon-sm')}
+                <span>Secure access for tourists, guides, and IT managers.</span>
+            </div>
+        </aside>
+
+        <main class="auth-portal-main">
+            <section class="auth-card">
+                <div class="auth-tabs" role="tablist">
+                    <button
+                        type="button"
+                        class="auth-tab ${isLogin ? 'active' : ''}"
+                        onclick="renderView('login')">
+                        Log In
+                    </button>
+
+                    <button
+                        type="button"
+                        class="auth-tab ${!isLogin ? 'active' : ''}"
+                        onclick="renderView('register')">
+                        Create Account
+                    </button>
+                </div>
+
+                <div class="auth-form-head">
+                    <span class="auth-kicker">${isLogin ? 'Welcome back' : 'Registration'}</span>
+                    <h2>${isLogin ? 'Log in to your account' : 'Create your account'}</h2>
+                    <p>${isLogin ? 'Continue your wildlife guide experience.' : 'Build your profile and unlock tours, sightings, and park tools.'}</p>
+                </div>
+
+                ${isLogin ? renderLoginFormOnly() : renderRegisterFormOnly()}
+            </section>
+        </main>
     </div>`;
+}
+
+function renderLoginFormOnly() {
+    return `<form class="auth-form" onsubmit="event.preventDefault(); handleLogin();">
+        <label class="auth-field">
+            <span class="auth-field-label">Email or Username</span>
+            <span class="auth-input-shell">
+                ${icon('mail', 'icon-sm')}
+                <input 
+                    type="text" 
+                    id="loginUsername" 
+                    class="auth-input" 
+                    placeholder="Enter your email or username"
+                    autocomplete="username">
+            </span>
+        </label>
+
+        <label class="auth-field">
+            <span class="auth-field-label">Password</span>
+            <span class="auth-input-shell">
+                ${icon('lock', 'icon-sm')}
+                <input 
+                    type="password" 
+                    id="loginPassword" 
+                    class="auth-input" 
+                    placeholder="Enter your password"
+                    autocomplete="current-password">
+
+                <button 
+                    type="button" 
+                    class="auth-ghost-icon" 
+                    onclick="togglePasswordVisibility('loginPassword', this)" 
+                    aria-label="Show password">
+                    ${icon('eye', 'icon-sm')}
+                </button>
+            </span>
+        </label>
+
+        <div class="auth-options-row">
+            <label class="auth-check">
+                <input type="checkbox" id="rememberMe" checked>
+                <span class="auth-check-box">${icon('check', 'icon-sm')}</span>
+                <span>Remember me</span>
+            </label>
+
+            <button type="button" class="auth-link-btn" onclick="handleForgotPassword()">
+                Forgot password?
+            </button>
+        </div>
+
+        <button type="submit" class="auth-primary-btn">
+            ${icon('leaf', 'icon-sm')} Log In
+        </button>
+    </form>`;
+}
+
+function renderRegisterFormOnly() {
+    return `<form class="auth-form auth-register-form" onsubmit="event.preventDefault(); handleRegistration();">
+        <div class="auth-grid">
+            <label class="auth-field">
+                <span class="auth-field-label">Full Name</span>
+                <span class="auth-input-shell">
+                    ${icon('user', 'icon-sm')}
+                    <input 
+                        type="text" 
+                        id="regFullName" 
+                        class="auth-input" 
+                        placeholder="Your full name"
+                        autocomplete="name">
+                </span>
+            </label>
+
+            <label class="auth-field">
+                <span class="auth-field-label">Username</span>
+                <span class="auth-input-shell">
+                    ${icon('at', 'icon-sm')}
+                    <input 
+                        type="text" 
+                        id="regUsername" 
+                        class="auth-input" 
+                        placeholder="Choose username"
+                        autocomplete="username">
+                </span>
+            </label>
+        </div>
+
+        <label class="auth-field">
+            <span class="auth-field-label">Email</span>
+            <span class="auth-input-shell">
+                ${icon('mail', 'icon-sm')}
+                <input 
+                    type="email" 
+                    id="regEmail" 
+                    class="auth-input" 
+                    placeholder="name@example.com"
+                    autocomplete="email">
+            </span>
+        </label>
+
+        <div class="auth-grid">
+            <label class="auth-field">
+                <span class="auth-field-label">Password</span>
+                <span class="auth-input-shell">
+                    ${icon('lock', 'icon-sm')}
+                    <input 
+                        type="password" 
+                        id="regPassword" 
+                        class="auth-input" 
+                        placeholder="Create password"
+                        autocomplete="new-password">
+
+                    <button 
+                        type="button" 
+                        class="auth-ghost-icon" 
+                        onclick="togglePasswordVisibility('regPassword', this)" 
+                        aria-label="Show password">
+                        ${icon('eye', 'icon-sm')}
+                    </button>
+                </span>
+            </label>
+
+            <label class="auth-field">
+                <span class="auth-field-label">Confirm</span>
+                <span class="auth-input-shell">
+                    ${icon('lock', 'icon-sm')}
+                    <input 
+                        type="password" 
+                        id="regConfirmPassword" 
+                        class="auth-input" 
+                        placeholder="Repeat password"
+                        autocomplete="new-password">
+
+                    <button 
+                        type="button" 
+                        class="auth-ghost-icon" 
+                        onclick="togglePasswordVisibility('regConfirmPassword', this)" 
+                        aria-label="Show password">
+                        ${icon('eye', 'icon-sm')}
+                    </button>
+                </span>
+            </label>
+        </div>
+
+        <label class="auth-field">
+            <span class="auth-field-label">Role</span>
+            <span class="auth-input-shell">
+                ${icon('shield', 'icon-sm')}
+                <select id="regUserType" class="auth-select">
+                    <option value="tourist">Tourist</option>
+                    <option value="guide">Tour Guide</option>
+                    <option value="it_manager">IT Manager</option>
+                </select>
+            </span>
+        </label>
+
+        <button type="submit" class="auth-primary-btn">
+            ${icon('leaf', 'icon-sm')} Create Account
+        </button>
+
+        <div class="auth-secure-note">
+            ${icon('shield', 'icon-md')}
+            <span>Your information is secure with us.</span>
+        </div>
+    </form>`;
+}
+
+function renderLoginScreen() {
+    return renderAuthPortal('login');
 }
 
 function renderRegisterScreen() {
-    return `<div class="login-container auth-screen auth-screen-register">
-        <div class="auth-stage">
-            <div class="auth-topbar">
-                <div class="auth-brand">
-                    <div class="auth-brand-mark">${icon('map', 'icon-md')}</div>
-                    <div>
-                        <div class="auth-brand-name">Bwindi SIGTS</div>
-                        <div class="auth-brand-meta">Smart Information Guide Tour System</div>
-                    </div>
-                </div>
-            </div>
-            <div class="auth-panel">
-                <div class="auth-copy">
-                    <div class="auth-kicker">Registration</div>
-                    <h1 class="auth-title">Create Account</h1>
-                    <p class="auth-subtitle">Build your profile and unlock tours, sightings, and park tools.</p>
-                    <p class="auth-switch">Already a member? <button class="auth-link-btn" onclick="renderView('login')">Log in</button></p>
-                </div>
-                <div class="auth-form-card">
-                    <div class="auth-grid">
-                        <label class="auth-field">
-                            <span class="auth-field-label">Full Name</span>
-                            <input type="text" id="regFullName" class="auth-input" placeholder="Your full name">
-                        </label>
-                        <label class="auth-field">
-                            <span class="auth-field-label">Username</span>
-                            <input type="text" id="regUsername" class="auth-input" placeholder="Choose a username">
-                        </label>
-                    </div>
-                    <label class="auth-field">
-                        <span class="auth-field-label">Email</span>
-                        <input type="email" id="regEmail" class="auth-input" placeholder="name@example.com">
-                    </label>
-                    <label class="auth-field">
-                        <span class="auth-field-label">Password</span>
-                        <input type="password" id="regPassword" class="auth-input" placeholder="Create a password">
-                    </label>
-                    <label class="auth-field">
-                        <span class="auth-field-label">Confirm Password</span>
-                        <input type="password" id="regConfirmPassword" class="auth-input" placeholder="Repeat your password">
-                    </label>
-                    <label class="auth-field">
-                        <span class="auth-field-label">Role</span>
-                        <select id="regUserType" class="auth-select">
-                            <option value="tourist">Tourist</option>
-                            <option value="guide">Tour Guide</option>
-                            <option value="it_manager">IT Manager</option>
-                        </select>
-                    </label>
-                    <div class="auth-actions">
-                        <button onclick="handleRegistration()" class="auth-primary-btn">Create Account</button>
-                        <button onclick="renderView('login')" class="auth-secondary-btn">Back to Login</button>
-                    </div>
-                </div>
-            </div>
-            <div class="auth-photo-panel" aria-hidden="true"></div>
-        </div>
-    </div>`;
+    return renderAuthPortal('register');
 }
+async function renderView(view, options = {}) {
+    const safeView = normalizeView(view);
+    const shouldUpdateHash = options.updateHash === true;
+    window.currentView = safeView;
 
-async function renderView(view) {
-    window.currentView = view;
+    if (shouldUpdateHash) {
+        const targetHash = `#${safeView}`;
+        if (window.location.hash !== targetHash) {
+            window.location.hash = targetHash;
+        }
+    }
+
     const app = document.getElementById('app');
     if (!app) return;
 
-    document.body.classList.toggle('auth-page', view === 'login' || view === 'register');
+    document.body.classList.toggle('auth-page', PUBLIC_VIEWS.has(safeView));
     
-    if (!Auth.isAuthenticated() && view !== 'login' && view !== 'register') {
-        renderView('login');
+    if (!Auth.isAuthenticated() && !PUBLIC_VIEWS.has(safeView)) {
+        navigateTo('login');
         return;
     }
     
     let content = '';
-    switch(view) {
+    switch(safeView) {
         case 'login': app.innerHTML = renderLoginScreen(); return;
         case 'register': app.innerHTML = renderRegisterScreen(); return;
         case 'dashboard': content = await renderDashboardContent(); break;

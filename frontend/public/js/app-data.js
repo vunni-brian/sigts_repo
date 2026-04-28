@@ -5,7 +5,20 @@
 // APP STATE MANAGEMENT (Extended for Intranet)
 // =====================================================
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = (() => {
+    const configuredBase = window.__SIGTS_API_BASE__;
+    if (typeof configuredBase === 'string' && configuredBase.trim()) {
+        return configuredBase.replace(/\/$/, '');
+    }
+
+    const host = window.location.hostname;
+    const isLocalHost = host === 'localhost' || host === '127.0.0.1';
+    if (isLocalHost) {
+        return 'http://localhost:8000/api';
+    }
+
+    return `${window.location.origin}/api`;
+})();
 
 class APIService {
     getToken() {

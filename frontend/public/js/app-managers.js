@@ -111,7 +111,9 @@ class AuthManager {
         });
 
         if (result?.success && result.mfaRequired && result.mfaToken) {
-            const code = prompt('Enter your 6-digit authenticator code');
+            const code = window.showPromptDialog
+                ? await window.showPromptDialog('Enter your 6-digit authenticator code')
+                : prompt('Enter your 6-digit authenticator code');
             if (!code) return { success: false, error: 'MFA code required' };
             const mfaResult = await API.request('/auth/mfa/complete', {
                 method: 'POST',
@@ -146,7 +148,8 @@ class AuthManager {
         if (!user) return { success: false, error: 'User not found' };
         this.twoFactorPending = false;
         this.pending2FACode = null;
-        return this.completeLogin(user, false);
+        const demoToken = `demo.${btoa(String(user.id || user.user_id || 'user')).replace(/=+$/g, '')}.token`;
+        return this.completeLogin(user, demoToken, true);
     }
 
     completeLogin(user, token, rememberMe) {
@@ -179,6 +182,10 @@ class AuthManager {
 
     send2FACode(email, code) {
         console.log(`2FA code for ${email}: ${code}`);
+        if (window.showToast) {
+            window.showToast(`Demo 2FA code: ${code}`, 'info');
+            return;
+        }
         alert(`Demo 2FA: Your verification code is ${code}`);
     }
 
@@ -186,7 +193,8 @@ class AuthManager {
         if (this.sessionTimer) clearTimeout(this.sessionTimer);
         this.sessionTimer = setTimeout(() => {
             this.logout();
-            alert('Your session has expired. Please login again.');
+            if (window.showToast) window.showToast('Your session has expired. Please login again.', 'warning');
+            else alert('Your session has expired. Please login again.');
         }, this.sessionTimeout);
     }
 
@@ -506,7 +514,8 @@ class ContentManager {
         AppState.cachedContent.version++;
         localStorage.setItem('offline_version', AppState.cachedContent.version);
         this.updateStorageUsage();
-        alert('Offline content updated from server!');
+        if (window.showToast) window.showToast('Offline content updated from server!', 'success');
+        else alert('Offline content updated from server!');
     }
 
     updateStorageUsage() {
