@@ -1,0 +1,50 @@
+{
+  "name": "sigts-backend",
+  "version": "1.0.0",
+  "description": "Smart Information Guide Tour System - Backend API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "init-db": "node scripts/initDb.js",
+    "migrate": "node scripts/migrate.js",
+    "migrate:up": "node scripts/migrate.js up",
+    "migrate:down": "node scripts/migrate.js down",
+    "migrate:status": "node scripts/migrate.js status",
+    "seed": "node scripts/seed.js",
+    "backup": "node scripts/backup.js backup",
+    "backup:list": "node scripts/backup.js list",
+    "backup:clean": "node scripts/backup.js clean",
+    "restore": "node scripts/restore.js",
+    "health": "node scripts/healthcheck.js",
+    "db:reset": "npm run init-db && npm run migrate && npm run seed"
+  },
+  "dependencies": {
+    "bcryptjs": "2.4.3",
+    "compression": "^1.8.1",
+    "connect-redis": "^9.0.0",
+    "cors": "2.8.5",
+    "dotenv": "16.3.1",
+    "express": "^4.22.1",
+    "express-rate-limit": "7.1.5",
+    "express-session": "^1.19.0",
+    "express-validator": "7.0.1",
+    "helmet": "7.1.0",
+    "jsonwebtoken": "9.0.2",
+    "morgan": "^1.10.1",
+    "multer": "1.4.5-lts.1",
+    "nodemailer": "^8.0.5",
+    "pg": "^8.11.3",
+    "pg-pool": "^3.13.0",
+    "redis": "^5.0.0",
+    "sharp": "0.33.1",
+    "socket.io": "^4.8.3",
+    "uuid": "^14.0.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "jest": "29.7.0",
+    "nodemon": "3.0.2",
+    "supertest": "6.3.3"
+  }
+}

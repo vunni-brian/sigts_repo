@@ -1,0 +1,43 @@
+{
+  "name": "sigts-frontend",
+  "version": "1.0.0",
+  "description": "Smart Information Guide Tour System - Frontend for Bwindi Impenetrable National Park",
+  "main": "public/app.js",
+  "scripts": {
+    "dev": "live-server public --port=3000",
+    "start": "live-server public --port=3000",
+    "build": "echo 'Build: Copy files to dist' && xcopy public dist /E /I"
+  },
+  "dependencies": {
+    "dexie": "^3.2.7",
+    "leaflet": "^1.9.4"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.0"
+  },
+  "keywords": [
+    "bwindi",
+    "tour-guide",
+    "national-park",
+    "uganda",
+    "offline-first",
+    "pwa"
+  ],
+  "author": "Bwindi Impenetrable National Park Authority",
+  "license": "Proprietary",
+  "browserslist": [
+    "last 2 Chrome versions",
+    "last 2 Firefox versions",
+    "last 2 Safari versions",
+    "Android >= 5.0"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akandwanahojames/sigts-bwindi.git"
+  },
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/akandwanahojames/sigts-bwindi/issues"
+  },
+  "homepage": "https://github.com/akandwanahojames/sigts-bwindi#readme"
+}

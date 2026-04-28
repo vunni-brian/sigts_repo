@@ -1,0 +1,136 @@
+openapi: 3.0.0
+info:
+  title: SIGTS API - Smart Information Guide Tour System
+  description: API for Bwindi Impenetrable National Park tour guide system
+  version: 1.0.0
+  contact:
+    name: Bwindi Park Management
+    email: support@bwindi.go.ug
+
+servers:
+  - url: https://bwindi.local/api/v1
+    description: Bwindi Intranet
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: "john_tourist"
+                email:
+                  type: string
+                  format: email
+                  example: "john@example.com"
+                password:
+                  type: string
+                  format: password
+                  example: "SecurePass123"
+                firstName:
+                  type: string
+                  example: "John"
+                lastName:
+                  type: string
+                  example: "Doe"
+                userType:
+                  type: string
+                  enum: [tourist, guide]
+                  default: tourist
+      responses:
+        201:
+          description: Registration successful
+        400:
+          description: Invalid input
+
+  /auth/login:
+    post:
+      summary: Login to the system
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: "john_tourist"
+                password:
+                  type: string
+                  format: password
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    type: object
+
+  /animals:
+    get:
+      summary: Get all animals
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of animals
+
+  /sightings:
+    post:
+      summary: Report a wildlife sighting
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                animal_id:
+                  type: string
+                  format: uuid
+                location_id:
+                  type: string
+                  format: uuid
+                number_observed:
+                  type: integer
+                  minimum: 1
+                behavior:
+                  type: string
+      responses:
+        201:
+          description: Sighting reported
+
+  /tours/start:
+    put:
+      summary: Start a tour (guide only)
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Tour started
+        403:
+          description: Insufficient permissions

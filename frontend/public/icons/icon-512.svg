@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="SIGTS icon">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1B5E20"/>
+      <stop offset="100%" stop-color="#2D6A4F"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E9C46A"/>
+      <stop offset="100%" stop-color="#D4A843"/>
+    </linearGradient>
+  </defs>
+  <rect x="24" y="24" width="464" height="464" rx="108" fill="url(#bg)"/>
+  <circle cx="256" cy="214" r="96" fill="url(#accent)"/>
+  <path d="M122 390c21-67 73-99 134-99s113 32 134 99" fill="none" stroke="#E9C46A" stroke-width="40" stroke-linecap="round"/>
+  <path d="M256 164l20 41 45 7-33 31 8 45-40-21-40 21 8-45-33-31 45-7z" fill="#1B5E20"/>
+</svg>
