@@ -769,6 +769,7 @@ class OfflineSyncManager {
     async addToQueue(action, data) {
         this.pendingItems.push({ id: Date.now(), action, data, attempts: 0 });
         localStorage.setItem('sync_queue', JSON.stringify(this.pendingItems));
+        window.refreshNetworkStatusBadge?.();
         if (navigator.onLine) await this.processQueue();
     }
 
@@ -788,6 +789,7 @@ class OfflineSyncManager {
         }
         localStorage.setItem('sync_queue', JSON.stringify(this.pendingItems));
         this.isSyncing = false;
+        window.refreshNetworkStatusBadge?.();
     }
 
     async syncSighting(data) { return true; }
@@ -1059,6 +1061,39 @@ class ITManagerAPI {
             intranetStatus: intranetStatus || {},
             syncStatus: syncStatus || {}
         };
+    }
+
+    async getFeedbackInsights(days = 30) {
+        const dashboard = await API.getFeedbackDashboard(days);
+        if (!dashboard) {
+            return {
+                summary: {
+                    total_feedback: 0,
+                    avg_rating: 0,
+                    bug_reports: 0,
+                    feature_requests: 0,
+                    responded_count: 0
+                },
+                recent: []
+            };
+        }
+        return dashboard;
+    }
+
+    async getRareAlerts(limit = 10) {
+        return API.getRareSightingAlerts(limit);
+    }
+
+    async getUnackedRareAlerts(limit = 10) {
+        return API.getUnackedRareSightingAlerts(limit);
+    }
+
+    async acknowledgeRareAlert(alertId) {
+        return API.acknowledgeRareSightingAlert(alertId);
+    }
+
+    async respondToFeedback(feedbackId, responseText) {
+        return API.respondToFeedback(feedbackId, responseText);
     }
 }
 

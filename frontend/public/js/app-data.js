@@ -84,7 +84,14 @@ class APIService {
             method: 'POST',
             body: JSON.stringify(sightingData)
         });
-        if (result && (result.sighting_id || result.success)) return result;
+        if (result && (result.sighting_id || result.success)) {
+            if (result.rare_alert) {
+                const localAlerts = JSON.parse(localStorage.getItem('rare_sighting_alerts') || '[]');
+                localAlerts.unshift(result.rare_alert);
+                localStorage.setItem('rare_sighting_alerts', JSON.stringify(localAlerts.slice(0, 50)));
+            }
+            return result;
+        }
         // Fallback to localStorage
         const sightings = JSON.parse(localStorage.getItem('sightings') || '[]');
         const newSighting = { sighting_id: Date.now(), ...sightingData, timestamp: new Date().toISOString(), verified: false };
@@ -106,6 +113,55 @@ class APIService {
         const byAnimal = {};
         recent.forEach(s => { byAnimal[s.animal_name] = (byAnimal[s.animal_name] || 0) + s.number_observed; });
         return { byAnimal, totalSightings: recent.length };
+    }
+
+    async getRareSightingAlerts(limit = 10) {
+        const result = await this.request(`/sightings/alerts/rare?limit=${limit}`);
+        if (Array.isArray(result)) return result;
+        return JSON.parse(localStorage.getItem('rare_sighting_alerts') || '[]').slice(0, limit);
+    }
+
+    async getUnackedRareSightingAlerts(limit = 10) {
+        const result = await this.request(`/sightings/alerts/rare?limit=${limit}&unacked=true`);
+        if (Array.isArray(result)) return result;
+        return JSON.parse(localStorage.getItem('rare_sighting_alerts') || '[]')
+            .filter((a) => !a.acknowledged)
+            .slice(0, limit);
+    }
+
+    async acknowledgeRareSightingAlert(alertId) {
+        const result = await this.request(`/sightings/alerts/rare/${encodeURIComponent(alertId)}/ack`, {
+            method: 'PUT'
+        });
+        if (result?.success) return result.alert;
+        return null;
+    }
+
+    async getSightingComments(sightingId, limit = 10) {
+        const result = await this.request(`/sightings/${encodeURIComponent(sightingId)}/comments?limit=${limit}`);
+        if (Array.isArray(result)) return result;
+        const allLocal = JSON.parse(localStorage.getItem('sighting_comments') || '{}');
+        return Array.isArray(allLocal[sightingId]) ? allLocal[sightingId].slice(0, limit) : [];
+    }
+
+    async addSightingComment(sightingId, commentText) {
+        const result = await this.request(`/sightings/${encodeURIComponent(sightingId)}/comments`, {
+            method: 'POST',
+            body: JSON.stringify({ comment_text: commentText })
+        });
+        if (result?.success && result.comment) return result.comment;
+
+        const allLocal = JSON.parse(localStorage.getItem('sighting_comments') || '{}');
+        if (!Array.isArray(allLocal[sightingId])) allLocal[sightingId] = [];
+        allLocal[sightingId].unshift({
+            comment_id: `local_${Date.now()}`,
+            sighting_id: sightingId,
+            comment_text: commentText,
+            created_at: new Date().toISOString(),
+            username: Auth?.getCurrentUser?.()?.name || 'You'
+        });
+        localStorage.setItem('sighting_comments', JSON.stringify(allLocal));
+        return allLocal[sightingId][0];
     }
 
     // Animals endpoints
@@ -273,6 +329,19 @@ class APIService {
         const result = await this.request(`/feedback/mine?limit=${limit}`);
         if (result?.success && Array.isArray(result.feedback)) return result.feedback;
         return JSON.parse(localStorage.getItem('feedback') || '[]').slice(0, limit);
+    }
+
+    async getFeedbackDashboard(days = 30) {
+        const result = await this.request(`/feedback/dashboard?days=${days}`);
+        return result?.success ? result : null;
+    }
+
+    async respondToFeedback(feedbackId, responseText) {
+        const result = await this.request(`/feedback/${feedbackId}/respond`, {
+            method: 'PUT',
+            body: JSON.stringify({ response_text: responseText })
+        });
+        return result?.success ? result.feedback : null;
     }
 
     // User profile updates (language/preferences)

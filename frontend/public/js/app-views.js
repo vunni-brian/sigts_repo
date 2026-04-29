@@ -104,6 +104,8 @@ let liveMapLayers = {
 let liveMapRefreshTimer = null;
 let liveMapPOIs = [];
 let activeGuidanceTarget = null;
+let liveMapTileLayers = {};
+let measureStartPoint = null;
 
 function getGuideOpsManager() {
     if (!window.__guideOpsManager) {
@@ -134,7 +136,10 @@ function renderMainLayout(content) {
         navItems.push({ id: 'intranet', icon: 'building', label: 'Intranet' });
     }
     
-    return `<div class="app-container"><button class="sidebar-toggle" onclick="toggleSidebar()">${icon('menu', 'icon-sm')}</button><div class="sidebar"><div class="sidebar-header"><div class="sidebar-brand"><div class="sidebar-logo"><img src="/icons/icon-192.svg" alt="SIGTS logo"></div><div class="sidebar-title">Bwindi SIGTS</div></div></div><div class="sidebar-nav">${navItems.map(item => `<div class="nav-item-vertical ${window.currentView === item.id ? 'active' : ''}" onclick="navigateTo('${item.id}')"><div class="nav-icon-vertical">${icon(item.icon, 'icon-md')}</div><div class="nav-label-vertical">${item.label}</div></div>`).join('')}</div><div class="sidebar-logout" onclick="Auth.logout()">${icon('logout', 'icon-md')} Logout</div></div><div class="main-content" onclick="closeSidebar()"><div class="content-header"><h1>${getPageTitle(window.currentView)}</h1><div class="header-right"><button class="icon-btn notif-btn" onclick="renderView('notifications')">${icon('bell', 'icon-md')}<span class="notif-badge">3</span></button><button class="header-profile" onclick="navigateTo('profile')"><div class="header-avatar ${isITManager ? 'role-it' : (isGuide ? 'role-guide' : 'role-tourist')}">${avatarIcon}</div><div class="header-user-info"><div class="header-user-name">${escapeHtml(user.name)}</div><div class="header-user-role">${escapeHtml(roleLabel)}</div></div></button></div></div><div class="main-container">${content}</div></div></div>`;
+    const isOffline = !navigator.onLine;
+    const pending = OfflineSync?.getPendingCount?.() || 0;
+    const statusText = isOffline ? `Offline mode • ${pending} pending` : (pending ? `Online • ${pending} pending sync` : 'Online');
+    return `<div class="app-container"><button class="sidebar-toggle" onclick="toggleSidebar()">${icon('menu', 'icon-sm')}</button><div class="sidebar"><div class="sidebar-header"><div class="sidebar-brand"><div class="sidebar-logo"><img src="/icons/icon-192.svg" alt="SIGTS logo"></div><div class="sidebar-title">Bwindi SIGTS</div></div></div><div class="sidebar-nav">${navItems.map(item => `<div class="nav-item-vertical ${window.currentView === item.id ? 'active' : ''}" onclick="navigateTo('${item.id}')"><div class="nav-icon-vertical">${icon(item.icon, 'icon-md')}</div><div class="nav-label-vertical">${item.label}</div></div>`).join('')}</div><div class="sidebar-logout" onclick="Auth.logout()">${icon('logout', 'icon-md')} Logout</div></div><div class="main-content" onclick="closeSidebar()"><div class="content-header"><h1>${getPageTitle(window.currentView)}</h1><div class="header-right"><span id="networkStatusBadge" class="net-status ${isOffline ? 'offline' : 'online'}">${statusText}</span><button class="icon-btn notif-btn" onclick="renderView('it_dashboard')">${icon('bell', 'icon-md')}<span id="rareAlertBadge" class="notif-badge hidden">0</span></button><button class="header-profile" onclick="navigateTo('profile')"><div class="header-avatar ${isITManager ? 'role-it' : (isGuide ? 'role-guide' : 'role-tourist')}">${avatarIcon}</div><div class="header-user-info"><div class="header-user-name">${escapeHtml(user.name)}</div><div class="header-user-role">${escapeHtml(roleLabel)}</div></div></button></div></div><div class="main-container">${content}</div></div></div>`;
 }
 
 function getAnimalIconName(animalName = '') {
@@ -182,7 +187,6 @@ function renderDashboardShell({
     seasonalActionLabel,
     animalCount
 }) {
-    return `${renderDashboardQuickGrid(animalCount)}<div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon(primaryIcon, 'icon-sm')} ${primaryTitle}</h3></div><div id="recList">${primaryItems.map((item, index) => `<div class="rec-card"><div class="rec-avatar ${getRecommendationPhotoClass(item, index)}" aria-hidden="true"></div><div class="rec-info"><div class="rec-title">${escapeHtml(item.title)}</div>${item.match ? `<div class="rec-match">${escapeHtml(item.match)}</div>` : ''}<div class="rec-reason">${escapeHtml(item.reason)}</div></div><button class="rec-go" aria-label="Open">${icon('map', 'icon-sm')}</button></div>`).join('') || '<div class="empty-state">No items available.</div>'}</div></div><div class="dashboard-quote-card"><blockquote>${escapeHtml(quote)}</blockquote></div></div><div class="section-card seasonal-card"><div class="section-header"><h3>${icon('leaf', 'icon-sm')} Seasonal: ${seasonalTitle}</h3></div><div class="seasonal-list">${seasonalItems.map((a) => `<div class="seasonal-item">• ${escapeHtml(a)}</div>`).join('') || '<div class="seasonal-item">• No seasonal updates available</div>'}</div><div class="seasonal-bottom"><div class="seasonal-image-strip photo-leaf" aria-hidden="true"></div><button class="seasonal-action-btn">${escapeHtml(seasonalActionLabel || 'View Suggestions')}</button></div></div>`;
     return `${renderDashboardQuickGrid(animalCount)}<div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon(primaryIcon, 'icon-sm')} ${primaryTitle}</h3></div><div id="recList">${primaryItems.map((item, index) => {
         const recClass = item.avatarType === 'icon' ? 'rec-card system-rec' : 'rec-card';
         const iconOnlyAvatar = item.avatarType === 'icon'
@@ -207,12 +211,13 @@ async function renderAnimalsContent() {
                 <span class="animal-status status-${escapeHtml((animal.conservation_status || 'least_concern').replace(/_/g, '-'))}">
                     ${escapeHtml((animal.conservation_status || 'least_concern').replace(/_/g, ' '))}
                 </span>
+                <button class="small-btn" style="margin-top:10px;" onclick="submitContentHelpfulness('animal', '${animal.animal_id || animal.id}', '${escapeHtml(animal.name)}')">${icon('target', 'icon-sm')} Helpful?</button>
             </div>
         </div>`).join('')}</div>`;
 }
 
 function renderMapContent() {
-    return `<div class="map-container"><div id="bwindiLiveMap" class="map-canvas"></div><div class="map-overlay"><div class="map-status" id="mapStatus">Loading Bwindi live map...</div><div class="map-coords" id="mapCoords">Lat: --, Lng: --</div><div class="map-guidance"><select id="mapDestination" class="map-destination"><option value="">Select destination...</option></select><button class="small-btn" onclick="openMapGuidance()">Guide Me</button></div><div class="map-guidance-text" id="mapGuidanceText">Select a destination to get turn-by-turn guidance.</div></div></div>`;
+    return `<div class="map-container"><div id="bwindiLiveMap" class="map-canvas"></div><div class="map-overlay"><div class="map-status" id="mapStatus">Loading Bwindi live map...</div><div class="map-coords" id="mapCoords">Lat: --, Lng: --</div><div class="map-guidance"><select id="mapLayer" class="map-destination" onchange="changeMapLayer()"><option value="standard">Standard</option><option value="topo">Terrain</option></select></div><div class="map-guidance"><input id="mapSearchInput" class="map-destination" placeholder="Search location..." /><button class="small-btn" onclick="searchMapLocation()">Find</button></div><div class="map-guidance"><select id="mapDestination" class="map-destination"><option value="">Select destination...</option></select><button class="small-btn" onclick="openMapGuidance()">Guide Me</button></div><div class="map-guidance"><button class="small-btn" onclick="startDistanceMeasure()">Set A</button><button class="small-btn" onclick="measureToCurrent()">A → Me</button></div><div class="map-guidance-text" id="mapGuidanceText">Select a destination to get turn-by-turn guidance.</div><div class="map-nearby" id="mapNearbyList">Nearby POIs will appear here.</div></div></div>`;
 }
 
 function normalizeCoordinatePair(point) {
@@ -351,6 +356,64 @@ window.openMapGuidance = function () {
     }
 };
 
+window.changeMapLayer = function () {
+    if (!liveMapInstance) return;
+    const selected = document.getElementById('mapLayer')?.value || 'standard';
+    Object.values(liveMapTileLayers).forEach((layer) => {
+        try { liveMapInstance.removeLayer(layer); } catch (_) {}
+    });
+    const target = liveMapTileLayers[selected] || liveMapTileLayers.standard;
+    if (target) target.addTo(liveMapInstance);
+};
+
+window.searchMapLocation = function () {
+    const input = document.getElementById('mapSearchInput');
+    const query = (input?.value || '').trim().toLowerCase();
+    if (!query) return;
+    const match = liveMapPOIs.find((p) => String(p.name || '').toLowerCase().includes(query));
+    if (!match || !liveMapInstance) {
+        setMapStatus('No matching location found');
+        return;
+    }
+    const coords = coerceLatLng(match);
+    if (!coords) return;
+    liveMapInstance.setView([coords.lat, coords.lng], 14);
+    setMapStatus(`Centered on ${match.name}`);
+};
+
+window.startDistanceMeasure = function () {
+    const current = Geofence?.currentLocation || AppState?.currentLocation;
+    if (!current || !Number.isFinite(current.lat) || !Number.isFinite(current.lng)) {
+        setMapStatus('Cannot set point A without current location');
+        return;
+    }
+    measureStartPoint = { lat: current.lat, lng: current.lng };
+    setMapStatus(`Point A set at ${current.lat.toFixed(4)}, ${current.lng.toFixed(4)}`);
+};
+
+window.measureToCurrent = function () {
+    if (!measureStartPoint) {
+        setMapStatus('Set point A first');
+        return;
+    }
+    const current = Geofence?.currentLocation || AppState?.currentLocation;
+    if (!current || !Number.isFinite(current.lat) || !Number.isFinite(current.lng)) {
+        setMapStatus('Current location unavailable');
+        return;
+    }
+    const meters = Geofence.calculateDistance(measureStartPoint.lat, measureStartPoint.lng, current.lat, current.lng);
+    setMapStatus(`Distance A → current: ${(meters / 1000).toFixed(2)} km`);
+    if (liveMapInstance) {
+        if (liveMapLayers.route) {
+            try { liveMapInstance.removeLayer(liveMapLayers.route); } catch (_) {}
+        }
+        liveMapLayers.route = window.L.polyline(
+            [[measureStartPoint.lat, measureStartPoint.lng], [current.lat, current.lng]],
+            { color: '#7B1FA2', weight: 3, dashArray: '6,5', opacity: 0.9 }
+        ).addTo(liveMapInstance);
+    }
+};
+
 function teardownLiveMap() {
     stopLiveMapRefresh();
     if (liveMapInstance) {
@@ -358,6 +421,7 @@ function teardownLiveMap() {
         try { liveMapInstance.remove(); } catch (_) {}
         liveMapInstance = null;
     }
+    liveMapTileLayers = {};
 }
 
 function markerClassForLocation(location = {}) {
@@ -488,6 +552,22 @@ async function refreshLiveMapData() {
                     }
                 }
             }
+            const nearby = liveMapPOIs
+                .map((p) => {
+                    const coords = coerceLatLng(p);
+                    if (!coords) return null;
+                    const dist = Geofence.calculateDistance(current.lat, current.lng, coords.lat, coords.lng);
+                    return { name: p.name || 'POI', dist };
+                })
+                .filter(Boolean)
+                .sort((a, b) => a.dist - b.dist)
+                .slice(0, 4);
+            const nearbyNode = document.getElementById('mapNearbyList');
+            if (nearbyNode) {
+                nearbyNode.innerHTML = nearby.length
+                    ? nearby.map((n) => `• ${escapeHtml(n.name)} (${(n.dist / 1000).toFixed(2)} km)`).join('<br>')
+                    : 'No nearby POIs available.';
+            }
         } else {
             setMapCoords(null, null);
         }
@@ -549,11 +629,15 @@ async function initializeLiveMap() {
 
     const defaultCenter = [-1.05, 29.7];
     liveMapInstance = window.L.map('bwindiLiveMap', { zoomControl: true }).setView(defaultCenter, 11);
-
-    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    liveMapTileLayers.standard = window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(liveMapInstance);
+    });
+    liveMapTileLayers.topo = window.L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 17,
+        attribution: '&copy; OpenTopoMap contributors'
+    });
+    liveMapTileLayers.standard.addTo(liveMapInstance);
 
     await refreshLiveMapData();
     liveMapRefreshTimer = setInterval(() => {
@@ -577,6 +661,7 @@ async function renderCultureContent() {
                 <span class="story-community">${escapeHtml(featured.community || 'Community story')}</span>
                 <div class="story-title">${escapeHtml(featured.title_en || featured.title_local || 'Untitled story')}</div>
                 <div class="story-storyteller">${escapeHtml(featured.storyteller_name || 'Unknown storyteller')}${featured.duration ? ` • ${featured.duration} min` : ''}</div>
+                <button class="small-btn" style="margin-top:10px;" onclick="submitContentHelpfulness('cultural', '${featured.narrative_id || ''}', '${escapeHtml(featured.title_en || featured.title_local || 'story')}')">${icon('target', 'icon-sm')} Helpful?</button>
             </div>
         </div>
         ${secondary.map(story => `
@@ -585,18 +670,27 @@ async function renderCultureContent() {
                     <span class="story-community">${escapeHtml(story.community || 'Community story')}</span>
                     <div class="story-title">${escapeHtml(story.title_en || story.title_local || 'Untitled story')}</div>
                     <div class="story-storyteller">${escapeHtml(story.storyteller_name || 'Unknown storyteller')}${story.duration ? ` • ${story.duration} min` : ''}</div>
+                    <button class="small-btn" style="margin-top:10px;" onclick="submitContentHelpfulness('cultural', '${story.narrative_id || ''}', '${escapeHtml(story.title_en || story.title_local || 'story')}')">${icon('target', 'icon-sm')} Helpful?</button>
                 </div>
             </div>`).join('')}`;
 }
 
 async function renderSightingsContent() {
     const sightings = await API.getRecentSightings(10);
+    const commentsBySighting = {};
+    await Promise.all((sightings || []).map(async (sighting) => {
+        const sid = sighting.sighting_id;
+        if (!sid) return;
+        commentsBySighting[sid] = await API.getSightingComments(sid, 3);
+    }));
     return `<div class="section-card"><div class="section-header"><h3>${icon('camera', 'icon-sm')} Recent Sightings</h3><button class="add-btn" onclick="addSighting()">${icon('plus', 'icon-sm')} Report</button></div><div class="sighting-list">${sightings.length ? sightings.map(sighting => `
         <div class="sighting-item">
             <div class="sighting-icon">${icon(getAnimalIconName(sighting.animal_name), 'icon-lg')}</div>
-            <div>
+            <div class="sighting-main">
                 <div class="sighting-name">${escapeHtml(sighting.animal_name || 'Wildlife sighting')}</div>
                 <div class="sighting-meta">${escapeHtml(sighting.location_name || 'Unknown location')} • ${new Date(sighting.timestamp).toLocaleString()}</div>
+                <div class="sighting-comments">${(commentsBySighting[sighting.sighting_id] || []).length ? (commentsBySighting[sighting.sighting_id] || []).map((c) => `<div class="sighting-comment"><strong>${escapeHtml(c.full_name || c.username || 'Visitor')}:</strong> ${escapeHtml(c.comment_text || '')}</div>`).join('') : '<div class="sighting-comment muted">No comments yet.</div>'}</div>
+                <button class="small-btn sighting-comment-btn" onclick="addSightingCommentPrompt('${sighting.sighting_id}')">${icon('note', 'icon-sm')} Comment</button>
             </div>
             <span class="sighting-badge">${icon('paw', 'icon-sm')} ${sighting.number_observed || 1}</span>
         </div>`).join('') : '<div class="empty-state">No verified sightings available yet.</div>'}</div></div>`;
@@ -610,7 +704,7 @@ function renderProfileContent() {
 }
 
 function renderInfoContent() {
-    return `<div class="section-card"><div class="section-header"><h3>${icon('clock', 'icon-sm')} Opening Hours</h3></div><div style="padding:16px;">Park: 6:00 AM - 7:00 PM</div></div><div class="section-card"><div class="section-header"><h3>${icon('phone', 'icon-sm')} Emergency</h3></div><div style="padding:16px;">${icon('shield', 'icon-sm')} Rangers: +256-77-XXX-XXXX</div></div>`;
+    return `<div class="section-card"><div class="section-header"><h3>${icon('clock', 'icon-sm')} Opening Hours</h3></div><div style="padding:16px;">Park: 6:00 AM - 7:00 PM<br><button class="small-btn" style="margin-top:10px;" onclick="submitContentHelpfulness('info', '', 'Opening Hours')">${icon('target', 'icon-sm')} Helpful?</button></div></div><div class="section-card"><div class="section-header"><h3>${icon('phone', 'icon-sm')} Emergency</h3></div><div style="padding:16px;">${icon('shield', 'icon-sm')} Rangers: +256-77-XXX-XXXX<br><button class="small-btn" style="margin-top:10px;" onclick="submitContentHelpfulness('info', '', 'Emergency Contacts')">${icon('target', 'icon-sm')} Helpful?</button></div></div>`;
 }
 
 function renderAIChatContent() {
@@ -672,6 +766,8 @@ async function renderITManagerDashboard() {
     const users = await ITAPI.getUserList();
     const interactive = await ITAPI.getInteractiveAnalytics();
     const liveOps = await ITAPI.getLiveOperations();
+    const feedbackInsights = await ITAPI.getFeedbackInsights(30);
+    const rareAlerts = await ITAPI.getRareAlerts(6);
     const flowBars = (interactive.visitorFlow || []).slice(-7).map((point) => {
         const value = Number(point.visitor_count || 0);
         const width = Math.min(100, value === 0 ? 6 : value);
@@ -684,6 +780,7 @@ async function renderITManagerDashboard() {
     const demographicRows = (interactive.demographics?.user_types || []).map((row) =>
         `<div class="analytics-row"><span>${escapeHtml(row.user_type || 'user')}</span><div class="analytics-bar"><div style="width:${Math.min(100, Number(row.count || 0) * 10)}%;"></div></div><strong>${row.count || 0}</strong></div>`
     ).join('') || '<div class="empty-state">No demographics data yet.</div>';
+    const rareAlertsHtml = `<div class="section-card"><div class="section-header"><h3>${icon('bell', 'icon-sm')} Rare Sighting Alerts</h3></div><div class="seasonal-list">${(rareAlerts || []).length ? rareAlerts.map((a) => `<div class="seasonal-item rare-alert-item"><strong>${escapeHtml((a.risk_level || 'high').toUpperCase())}</strong> • ${escapeHtml(a.animal_name || 'Wildlife')} @ ${escapeHtml(a.location_name || 'Unknown')} (${a.number_observed || 0}) ${a.acknowledged ? '<span style="color:#2E7D32;">(Acknowledged)</span>' : `<button class=\"small-btn\" onclick=\"ackRareAlertPrompt('${a.alert_id}')\">Acknowledge</button>`}<br><span style="color:#6B705C;">${escapeHtml(a.reason || '')}</span></div>`).join('') : '<div class="seasonal-item">• No rare alerts in recent reports.</div>'}</div></div>`;
     const animals = await Content.getAnimals();
     return `<div class="it-dashboard">${renderDashboardShell({
         primaryTitle: 'System Recommendations',
@@ -727,7 +824,7 @@ async function renderITManagerDashboard() {
         ],
         seasonalActionLabel: 'View Suggestions',
         animalCount: animals.length
-    })}<div class="section-card"><div class="section-header"><h3>${icon('users', 'icon-sm')} Users</h3></div>${users.map(u => `<div class="user-item">${u.full_name} (${u.user_type}) - ${u.department || ''}</div>`).join('')}</div><div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon('chart', 'icon-sm')} Visitor Flow (7 days)</h3></div><div class="analytics-list">${flowBars}</div></div><div class="section-card"><div class="section-header"><h3>${icon('target', 'icon-sm')} Popular Content</h3></div><div class="analytics-list">${popularRows}</div></div></div><div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon('users', 'icon-sm')} User Type Demographics</h3></div><div class="analytics-list">${demographicRows}</div></div><div class="section-card"><div class="section-header"><h3>${icon('map', 'icon-sm')} Congestion Guidance</h3></div><div class="seasonal-list">${(interactive.congestionRecommendations || []).map((r) => `<div class="seasonal-item">• ${escapeHtml(r)}</div>`).join('') || '<div class="seasonal-item">• No congestion recommendations available</div>'}</div></div></div><div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon('building', 'icon-sm')} Intranet Connectivity</h3></div><div class="analytics-list"><div class="analytics-row"><span>Intranet</span><div class="analytics-bar"><div style="width:${liveOps.intranetStatus?.isIntranet ? 100 : 35}%;"></div></div><strong>${liveOps.intranetStatus?.isIntranet ? 'Connected' : 'External'}</strong></div><div class="analytics-row"><span>Device IP</span><span></span><strong>${escapeHtml(liveOps.intranetStatus?.ip || 'Unknown')}</strong></div><div class="analytics-row"><span>Pending Sync</span><span></span><strong>${liveOps.syncStatus?.pending || liveOps.syncStatus?.pending_items || 0}</strong></div></div></div><div class="section-card"><div class="section-header"><h3>${icon('user', 'icon-sm')} Live Peers / Guests</h3></div><div class="seasonal-list">${(liveOps.peers || []).length ? liveOps.peers.slice(0, 8).map((p) => `<div class="seasonal-item">• ${escapeHtml(p.name || 'Peer')} (${escapeHtml(p.type || 'user')})${p.location ? ` @ ${Number(p.location.lat).toFixed(4)}, ${Number(p.location.lng).toFixed(4)}` : ''}</div>`).join('') : '<div class="seasonal-item">• No live peers detected in last 5 minutes.</div>'}</div></div></div><div class="admin-actions"><button class="admin-action-btn" onclick="handleMFASetup()">${icon('shield', 'icon-sm')} Configure MFA</button><button class="admin-action-btn" onclick="clearAllCache()">Clear Cache</button><button class="admin-action-btn" onclick="exportData()">Export Data</button><button class="admin-action-btn danger" onclick="resetApp()">Reset App</button></div></div>`;
+    })}<div class="section-card"><div class="section-header"><h3>${icon('users', 'icon-sm')} Users</h3></div>${users.map(u => `<div class="user-item">${u.full_name} (${u.user_type}) - ${u.department || ''}</div>`).join('')}</div><div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon('chart', 'icon-sm')} Visitor Flow (7 days)</h3></div><div class="analytics-list">${flowBars}</div></div><div class="section-card"><div class="section-header"><h3>${icon('target', 'icon-sm')} Popular Content</h3></div><div class="analytics-list">${popularRows}</div></div></div><div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon('users', 'icon-sm')} User Type Demographics</h3></div><div class="analytics-list">${demographicRows}</div></div><div class="section-card"><div class="section-header"><h3>${icon('map', 'icon-sm')} Congestion Guidance</h3></div><div class="seasonal-list">${(interactive.congestionRecommendations || []).map((r) => `<div class="seasonal-item">• ${escapeHtml(r)}</div>`).join('') || '<div class="seasonal-item">• No congestion recommendations available</div>'}</div></div></div><div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon('building', 'icon-sm')} Intranet Connectivity</h3></div><div class="analytics-list"><div class="analytics-row"><span>Intranet</span><div class="analytics-bar"><div style="width:${liveOps.intranetStatus?.isIntranet ? 100 : 35}%;"></div></div><strong>${liveOps.intranetStatus?.isIntranet ? 'Connected' : 'External'}</strong></div><div class="analytics-row"><span>Device IP</span><span></span><strong>${escapeHtml(liveOps.intranetStatus?.ip || 'Unknown')}</strong></div><div class="analytics-row"><span>Pending Sync</span><span></span><strong>${liveOps.syncStatus?.pending || liveOps.syncStatus?.pending_items || 0}</strong></div></div></div><div class="section-card"><div class="section-header"><h3>${icon('user', 'icon-sm')} Live Peers / Guests</h3></div><div class="seasonal-list">${(liveOps.peers || []).length ? liveOps.peers.slice(0, 8).map((p) => `<div class="seasonal-item">• ${escapeHtml(p.name || 'Peer')} (${escapeHtml(p.type || 'user')})${p.location ? ` @ ${Number(p.location.lat).toFixed(4)}, ${Number(p.location.lng).toFixed(4)}` : ''}</div>`).join('') : '<div class="seasonal-item">• No live peers detected in last 5 minutes.</div>'}</div></div></div><div class="section-card"><div class="section-header"><h3>${icon('note', 'icon-sm')} Feedback & Improvements (30 days)</h3></div><div class="analytics-list"><div class="analytics-row"><span>Total Feedback</span><span></span><strong>${feedbackInsights.summary?.total_feedback || 0}</strong></div><div class="analytics-row"><span>Average Rating</span><span></span><strong>${feedbackInsights.summary?.avg_rating || 0}</strong></div><div class="analytics-row"><span>Bug Reports</span><span></span><strong>${feedbackInsights.summary?.bug_reports || 0}</strong></div><div class="analytics-row"><span>Feature Requests</span><span></span><strong>${feedbackInsights.summary?.feature_requests || 0}</strong></div><div class="analytics-row"><span>Responded</span><span></span><strong>${feedbackInsights.summary?.responded_count || 0}</strong></div></div><div class="seasonal-list">${(feedbackInsights.recent || []).slice(0, 5).map((item) => `<div class="seasonal-item">• ${escapeHtml(item.category)} - ${escapeHtml(item.comment || 'No comment')} ${item.response_text ? '<span style="color:#2E7D32;">(Responded)</span>' : `<button class=\"small-btn\" onclick=\"respondToFeedbackPrompt('${item.feedback_id}')\">Respond</button>`}</div>`).join('') || '<div class="seasonal-item">• No recent feedback</div>'}</div></div>${rareAlertsHtml}<div class="admin-actions"><button class="admin-action-btn" onclick="handleMFASetup()">${icon('shield', 'icon-sm')} Configure MFA</button><button class="admin-action-btn" onclick="clearAllCache()">Clear Cache</button><button class="admin-action-btn" onclick="exportData()">Export Data</button><button class="admin-action-btn danger" onclick="resetApp()">Reset App</button></div></div>`;
 }
 
 // =====================================================
@@ -885,6 +982,47 @@ window.submitUserFeedback = async function () {
     const commentNode = document.getElementById('feedbackComment');
     if (commentNode) commentNode.value = '';
     await loadRecentFeedback();
+};
+
+window.submitContentHelpfulness = async function (contentType, contentId, contentName) {
+    const helpful = confirm(`Was "${contentName}" helpful to you?`);
+    const score = helpful ? 5 : 2;
+    const payload = {
+        rating: helpful ? 5 : 3,
+        category: 'helpfulness',
+        comment: `Helpfulness feedback for ${contentType}: ${contentName}`,
+        source_content_id: contentId,
+        source_content_type: contentType,
+        helpfulness_rating: score
+    };
+    const saved = await API.submitFeedback(payload);
+    if (saved) alert('Thanks! Content feedback recorded.');
+    else alert('Feedback stored offline and will sync later.');
+};
+
+window.respondToFeedbackPrompt = async function (feedbackId) {
+    const response = prompt('Enter response to this feedback:');
+    if (!response) return;
+    const saved = await ITAPI.respondToFeedback(feedbackId, response);
+    if (saved) {
+        alert('Feedback response saved.');
+        renderView('it_dashboard');
+    } else {
+        alert('Failed to save response.');
+    }
+};
+
+window.ackRareAlertPrompt = async function (alertId) {
+    const saved = await ITAPI.acknowledgeRareAlert(alertId);
+    if (!saved) {
+        alert('Failed to acknowledge alert.');
+        return;
+    }
+    alert('Rare alert acknowledged.');
+    await refreshRareAlertBadge();
+    if (window.currentView === 'it_dashboard') {
+        await renderView('it_dashboard');
+    }
 };
 
 async function loadRecentFeedback() {
@@ -1046,7 +1184,11 @@ async function addSighting() {
     });
 
     if (result?.sighting_id || result?.success) {
-        alert('Sighting reported successfully.');
+        if (result?.rare_alert) {
+            alert(`Rare sighting alert: ${result.rare_alert.animal_name || 'Wildlife'} (${String(result.rare_alert.risk_level || 'high').toUpperCase()})`);
+        } else {
+            alert('Sighting reported successfully.');
+        }
         if (window.currentView === 'sightings') renderView('sightings');
     } else {
         alert('Failed to report sighting.');
@@ -1091,9 +1233,28 @@ async function quickSighting() {
         notes: 'Quick sighting from guide dashboard',
         tour_session_id: manager.activeTour?.tour_session_id || null
     });
-    if (result?.sighting_id || result?.success) alert('Sighting recorded!');
+    if (result?.sighting_id || result?.success) {
+        if (result?.rare_alert) {
+            alert(`Rare sighting alert sent: ${result.rare_alert.animal_name || 'Wildlife'} (${String(result.rare_alert.risk_level || 'high').toUpperCase()})`);
+        } else {
+            alert('Sighting recorded!');
+        }
+    }
     else alert('Sighting submit failed.');
 }
+
+window.addSightingCommentPrompt = async function (sightingId) {
+    const text = prompt('Add a comment to this sighting:');
+    if (!text || !text.trim()) return;
+    const saved = await API.addSightingComment(sightingId, text.trim());
+    if (!saved) {
+        alert('Failed to save comment.');
+        return;
+    }
+    if (window.currentView === 'sightings') {
+        await renderView('sightings');
+    }
+};
 
 async function clockInOut() {
     const m = new TourGuideManager();
@@ -1120,65 +1281,42 @@ window.addTourNotePrompt = async function () {
     else alert(saved.error || 'Failed to save note.');
 };
 
-function renderLoginScreen() {
-    return `<div class="login-container auth-screen auth-screen-login">
-        <div class="auth-stage">
-            <div class="auth-topbar">
-                <div class="auth-brand">
+function renderAuthMergedScreen(activePanel = 'login') {
+    return `<div class="login-container auth-merged-screen">
+        <div class="auth-merged-wrap">
+            <section class="auth-merged-pane auth-merged-login ${activePanel === 'login' ? 'active' : ''}">
+                <div class="auth-merged-brand">
                     <div class="auth-brand-mark">${icon('map', 'icon-md')}</div>
                     <div>
                         <div class="auth-brand-name">Bwindi SIGTS</div>
                         <div class="auth-brand-meta">Smart Information Guide Tour System</div>
                     </div>
                 </div>
-            </div>
-            <div class="auth-panel">
-                <div class="auth-copy">
-                    <div class="auth-kicker">Welcome</div>
-                    <h1 class="auth-title">Sign In</h1>
-                    <p class="auth-subtitle">Continue your wildlife guide experience with your account.</p>
-                    <p class="auth-switch">Don't have an account? <button class="auth-link-btn" onclick="renderView('register')">Create account</button></p>
-                </div>
+                <div class="auth-kicker">Welcome Back</div>
+                <h1 class="auth-title">Sign In</h1>
+                <p class="auth-subtitle">Continue your wildlife guide experience with your account.</p>
+                <p class="auth-switch">Don't have an account? <button class="auth-link-btn" onclick="renderView('register')">Create account</button></p>
                 <div class="auth-form-card">
                     <label class="auth-field">
                         <span class="auth-field-label">Email or Username</span>
-                        <input type="text" id="loginUsername" class="auth-input" placeholder="Enter your username">
+                        <input type="text" id="loginUsername" class="auth-input" placeholder="Enter your email or username">
                     </label>
                     <label class="auth-field">
                         <span class="auth-field-label">Password</span>
                         <input type="password" id="loginPassword" class="auth-input" placeholder="Enter your password">
                     </label>
-                    <div class="auth-actions">
-                        <button onclick="handleLogin()" class="auth-primary-btn">Login</button>
-                        <button onclick="handleForgotPassword()" class="auth-secondary-btn">Forgot Password</button>
-                        <button onclick="renderView('register')" class="auth-secondary-btn">Create Account</button>
+                    <div class="auth-merged-actions">
+                        <button onclick="handleLogin()" class="auth-primary-btn">Sign In</button>
+                        <button onclick="handleForgotPassword()" class="auth-merged-link">Forgot password?</button>
                     </div>
                 </div>
-            </div>
-            <div class="auth-photo-panel" aria-hidden="true"></div>
-        </div>
-    </div>`;
-}
-
-function renderRegisterScreen() {
-    return `<div class="login-container auth-screen auth-screen-register">
-        <div class="auth-stage">
-            <div class="auth-topbar">
-                <div class="auth-brand">
-                    <div class="auth-brand-mark">${icon('map', 'icon-md')}</div>
-                    <div>
-                        <div class="auth-brand-name">Bwindi SIGTS</div>
-                        <div class="auth-brand-meta">Smart Information Guide Tour System</div>
-                    </div>
-                </div>
-            </div>
-            <div class="auth-panel">
-                <div class="auth-copy">
-                    <div class="auth-kicker">Registration</div>
-                    <h1 class="auth-title">Create Account</h1>
-                    <p class="auth-subtitle">Build your profile and unlock tours, sightings, and park tools.</p>
-                    <p class="auth-switch">Already a member? <button class="auth-link-btn" onclick="renderView('login')">Log in</button></p>
-                </div>
+            </section>
+            <section class="auth-merged-visual" aria-hidden="true"></section>
+            <section class="auth-merged-pane auth-merged-register ${activePanel === 'register' ? 'active' : ''}">
+                <div class="auth-kicker">Registration</div>
+                <h1 class="auth-title">Create Account</h1>
+                <p class="auth-subtitle">Build your profile and unlock tours, sightings, and park tools.</p>
+                <p class="auth-switch">Already a member? <button class="auth-link-btn" onclick="renderView('login')">Log in</button></p>
                 <div class="auth-form-card">
                     <div class="auth-grid">
                         <label class="auth-field">
@@ -1210,15 +1348,21 @@ function renderRegisterScreen() {
                             <option value="it_manager">IT Manager</option>
                         </select>
                     </label>
-                    <div class="auth-actions">
+                    <div class="auth-merged-actions">
                         <button onclick="handleRegistration()" class="auth-primary-btn">Create Account</button>
-                        <button onclick="renderView('login')" class="auth-secondary-btn">Back to Login</button>
                     </div>
                 </div>
-            </div>
-            <div class="auth-photo-panel" aria-hidden="true"></div>
+            </section>
         </div>
     </div>`;
+}
+
+function renderLoginScreen() {
+    return renderAuthMergedScreen('login');
+}
+
+function renderRegisterScreen() {
+    return renderAuthMergedScreen('register');
 }
 
 async function renderView(view) {
@@ -1255,9 +1399,40 @@ async function renderView(view) {
         default: content = await renderDashboardContent();
     }
     app.innerHTML = renderMainLayout(content);
+    refreshNetworkStatusBadge();
+    await refreshRareAlertBadge();
     if (view === 'map') {
         await initializeLiveMap();
     } else if (view === 'profile') {
         await loadRecentFeedback();
     }
 }
+
+function refreshNetworkStatusBadge() {
+    const badge = document.getElementById('networkStatusBadge');
+    if (!badge) return;
+    const isOffline = !navigator.onLine;
+    const pending = OfflineSync?.getPendingCount?.() || 0;
+    badge.classList.toggle('offline', isOffline);
+    badge.classList.toggle('online', !isOffline);
+    badge.textContent = isOffline ? `Offline mode • ${pending} pending` : (pending ? `Online • ${pending} pending sync` : 'Online');
+}
+
+window.refreshNetworkStatusBadge = refreshNetworkStatusBadge;
+
+async function refreshRareAlertBadge() {
+    const badge = document.getElementById('rareAlertBadge');
+    if (!badge) return;
+    const user = Auth.getCurrentUser() || {};
+    const role = user.role || user.userType || user.user_type;
+    if (role !== 'it_manager' && role !== 'guide') {
+        badge.classList.add('hidden');
+        return;
+    }
+    const alerts = await ITAPI.getUnackedRareAlerts(20);
+    const count = Array.isArray(alerts) ? alerts.length : 0;
+    badge.textContent = String(Math.min(99, count));
+    badge.classList.toggle('hidden', count === 0);
+}
+
+window.refreshRareAlertBadge = refreshRareAlertBadge;

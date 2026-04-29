@@ -7,6 +7,7 @@ var AI = new AIRecommendationEngine();
 var OfflineSync = new OfflineSyncManager();
 var ITAPI = new ITManagerAPI();
 var Intranet = new IntranetManager();
+var rareAlertPollTimer = null;
 
 // Prevent stale UI during rapid development updates on desktop/mobile browsers.
 if ('serviceWorker' in navigator) {
@@ -58,6 +59,11 @@ async function init() {
 
     if (Auth.isAuthenticated()) renderView('dashboard');
     else renderView('login');
+
+    window.addEventListener('online', () => window.refreshNetworkStatusBadge?.());
+    window.addEventListener('offline', () => window.refreshNetworkStatusBadge?.());
+    if (rareAlertPollTimer) clearInterval(rareAlertPollTimer);
+    rareAlertPollTimer = setInterval(() => window.refreshRareAlertBadge?.(), 20000);
 }
 
 init();
