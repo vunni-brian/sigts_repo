@@ -5,34 +5,21 @@
 // APP STATE MANAGEMENT (Extended for Intranet)
 // =====================================================
 
-<<<<<<< HEAD
-const API_BASE_URL = (() => {
-    const configuredBase = window.__SIGTS_API_BASE__;
-    if (typeof configuredBase === 'string' && configuredBase.trim()) {
-        return configuredBase.replace(/\/$/, '');
-    }
-
-    const host = window.location.hostname;
-    const isLocalHost = host === 'localhost' || host === '127.0.0.1';
-    if (isLocalHost) {
-        return 'http://localhost:8000/api';
-    }
-
-    return `${window.location.origin}/api`;
-})();
-=======
 function resolveApiBaseUrl() {
     const explicit = window.localStorage?.getItem('sigts_api_base_url');
     if (explicit) return explicit.replace(/\/$/, '');
-    const configured = window.__SIGTS_API_BASE_URL__;
+
+    const configured = window.__SIGTS_API_BASE_URL__ || window.__SIGTS_API_BASE__;
     if (configured) return String(configured).replace(/\/$/, '');
-    const protocol = window.location.protocol || 'http:';
-    const hostname = window.location.hostname || 'localhost';
-    return `${protocol}//${hostname}:8000/api`;
+
+    const host = window.location.hostname || 'localhost';
+    const isLocalHost = host === 'localhost' || host === '127.0.0.1';
+    if (isLocalHost) return 'http://localhost:8000/api';
+
+    return `${window.location.origin}/api`;
 }
 
 const API_BASE_URL = resolveApiBaseUrl();
->>>>>>> upstream/master
 
 class APIService {
     getToken() {

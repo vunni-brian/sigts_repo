@@ -102,24 +102,31 @@ async function init() {
         localStorage.setItem('registeredUsers', JSON.stringify(users));
     }
 
-<<<<<<< HEAD
     const requestedView = window.location.hash.replace('#', '');
-
-    if (Auth.isAuthenticated()) {
-        navigateTo(requestedView || 'dashboard');
-        return;
-    }
-
-    navigateTo(requestedView === 'register' ? 'register' : 'login');
-=======
-    if (Auth.isAuthenticated()) renderView('dashboard');
-    else renderView('login');
 
     window.addEventListener('online', () => window.refreshNetworkStatusBadge?.());
     window.addEventListener('offline', () => window.refreshNetworkStatusBadge?.());
     if (rareAlertPollTimer) clearInterval(rareAlertPollTimer);
     rareAlertPollTimer = setInterval(() => window.refreshRareAlertBadge?.(), 20000);
->>>>>>> upstream/master
+
+    if (Auth.isAuthenticated()) {
+        if (requestedView) {
+            navigateTo(requestedView);
+        } else {
+            const user = Auth.getCurrentUser();
+            const role = user?.role || user?.userType || 'tourist';
+            if (role === 'it_manager') {
+                navigateTo('it_dashboard');
+            } else if (role === 'guide') {
+                navigateTo('guide_dashboard');
+            } else {
+                navigateTo('dashboard');
+            }
+        }
+        return;
+    }
+
+    navigateTo(requestedView === 'register' ? 'register' : 'login');
 }
 
 init();
