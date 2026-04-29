@@ -44,22 +44,9 @@ function icon(name, className = '') {
         download: '<path d="M12 4v10"/><path d="M8 10l4 4 4-4"/><path d="M4 19h16"/>',
         plus: '<path d="M12 5v14M5 12h14"/>',
         menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
-<<<<<<< HEAD
-        note: '<path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4"/><path d="M9 11h6M9 15h6"/>',
-        mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
-        lock: '<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
-        eye: '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
-        at: '<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>',
-        check: '<path d="M20 6L9 17l-5-5"/>',
-        arrowRight: '<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>',
-        chevronDown: '<path d="M6 9l6 6 6-6"/>',
-        sparkles: '<path d="M12 3l1.6 4.3L18 9l-4.4 1.7L12 15l-1.6-4.3L6 9l4.4-1.7z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8z"/><path d="M5 14l.7 1.8L8 16.5l-2.3.7L5 19l-.7-1.8L2 16.5l2.3-.7z"/>'
-=======
         note: '<path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4"/><path d="M9 11h6M9 15h6"/>'
         ,
-        smile: '<circle cx="12" cy="12" r="9"/><path d="M8 10h.01M16 10h.01"/><path d="M8 15c1.2 1.2 2.3 1.8 4 1.8s2.8-.6 4-1.8"/>'
->>>>>>> upstream/master
-    };
+        smile: '<circle cx="12" cy="12" r="9"/><path d="M8 10h.01M16 10h.01"/><path d="M8 15c1.2 1.2 2.3 1.8 4 1.8s2.8-.6 4-1.8"/>'    };
     const content = icons[name] || icons.info;
     return `<svg class="${classes}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${content}</svg>`;
 }
@@ -178,13 +165,8 @@ function renderMainLayout(content) {
     const user = Auth.getCurrentUser() || { name: 'Guest', role: 'tourist' };
     const isGuide = user?.role === 'guide' || user?.userType === 'guide';
     const isITManager = user?.role === 'it_manager' || user?.userType === 'it_manager';
-<<<<<<< HEAD
-    const roleLabel = formatRoleName(user.role || user.userType || 'tourist');
-=======
     const roleLabel = (user.role || user.userType || 'tourist').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-    const avatarIcon = isITManager ? icon('chart', 'icon-md') : (isGuide ? icon('ticket', 'icon-md') : icon('user', 'icon-md'));
->>>>>>> upstream/master
-    
+    const avatarIcon = isITManager ? icon('chart', 'icon-md') : (isGuide ? icon('ticket', 'icon-md') : icon('user', 'icon-md'));    
     let navItems = [
         { id: 'dashboard', icon: 'home', label: 'Home' },
         { id: 'animals', icon: 'paw', label: 'Animals' },
@@ -200,52 +182,10 @@ function renderMainLayout(content) {
         navItems.push({ id: 'intranet', icon: 'building', label: 'Intranet' });
     }
     
-<<<<<<< HEAD
-    return `<div class="app-container">
-        <button class="sidebar-toggle" onclick="toggleSidebar()">${icon('menu', 'icon-sm')}</button>
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-logo"><img src="/icons/icon-192.svg" alt="SIGTS logo"></div>
-                <div class="sidebar-title"><span class="sidebar-title-script">SIGTS</span><span>Platform</span></div>
-            </div>
-            <div class="sidebar-profile" onclick="navigateTo('profile')">
-                <div class="sidebar-avatar sidebar-avatar-photo" aria-hidden="true"></div>
-                <div class="sidebar-user-info">
-                    <div class="sidebar-user-name">${escapeHtml(user.name)}</div>
-                    <div class="sidebar-user-role">${escapeHtml(roleLabel)}</div>
-                </div>
-            </div>
-            <nav class="sidebar-nav">
-                ${navItems.map(item => `<div class="nav-item-vertical ${window.currentView === item.id ? 'active' : ''}" onclick="navigateTo('${item.id}')"><div class="nav-icon-vertical">${icon(item.icon, 'icon-md')}</div><div class="nav-label-vertical">${item.label}</div></div>`).join('')}
-            </nav>
-            <div class="sidebar-logout" onclick="Auth.logout()">${icon('logout', 'icon-md')} <span>Logout</span></div>
-        </aside>
-        <main class="main-content" onclick="closeSidebar()">
-            <div class="content-header">
-                <div class="header-left">
-                    <h1>${getPageTitle(window.currentView)}</h1>
-                    <p>${getPageSubtitle(window.currentView)}</p>
-                </div>
-                <div class="header-right">
-                    <span class="header-status-badge">${icon('shield', 'icon-sm')} Secure Session</span>
-                    <button class="icon-btn notification-btn" onclick="renderView('notifications')" aria-label="Notifications">${icon('bell', 'icon-md')}<span class="notification-dot">3</span></button>
-                    <button class="header-profile" onclick="navigateTo('profile')" aria-label="Open profile">
-                        <span class="header-avatar" aria-hidden="true"></span>
-                        <span class="header-profile-copy"><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(roleLabel)}</small></span>
-                        ${icon('chevronDown', 'icon-sm')}
-                    </button>
-                </div>
-            </div>
-            <div class="main-container">${content}</div>
-        </main>
-    </div>`;
-=======
     const isOffline = !navigator.onLine;
     const pending = OfflineSync?.getPendingCount?.() || 0;
     const statusText = isOffline ? `Offline mode • ${pending} pending` : (pending ? `Online • ${pending} pending sync` : 'Online');
-    return `<div class="app-container"><button class="sidebar-toggle" onclick="toggleSidebar()">${icon('menu', 'icon-sm')}</button><div class="sidebar"><div class="sidebar-header"><div class="sidebar-brand"><div class="sidebar-logo"><img src="/icons/icon-192.svg" alt="SIGTS logo"></div><div class="sidebar-title">Bwindi SIGTS</div></div></div><div class="sidebar-nav">${navItems.map(item => `<div class="nav-item-vertical ${window.currentView === item.id ? 'active' : ''}" onclick="navigateTo('${item.id}')"><div class="nav-icon-vertical">${icon(item.icon, 'icon-md')}</div><div class="nav-label-vertical">${item.label}</div></div>`).join('')}</div><div class="sidebar-logout" onclick="Auth.logout()">${icon('logout', 'icon-md')} Logout</div></div><div class="main-content" onclick="closeSidebar()"><div class="content-header"><h1>${getPageTitle(window.currentView)}</h1><div class="header-right"><span id="networkStatusBadge" class="net-status ${isOffline ? 'offline' : 'online'}">${statusText}</span><button class="icon-btn notif-btn" onclick="renderView('it_dashboard')">${icon('bell', 'icon-md')}<span id="rareAlertBadge" class="notif-badge hidden">0</span></button><button class="header-profile" onclick="navigateTo('profile')"><div class="header-avatar ${isITManager ? 'role-it' : (isGuide ? 'role-guide' : 'role-tourist')}">${avatarIcon}</div><div class="header-user-info"><div class="header-user-name">${escapeHtml(user.name)}</div><div class="header-user-role">${escapeHtml(roleLabel)}</div></div></button></div></div><div class="main-container">${content}</div></div></div>`;
->>>>>>> upstream/master
-}
+    return `<div class="app-container"><button class="sidebar-toggle" onclick="toggleSidebar()">${icon('menu', 'icon-sm')}</button><div class="sidebar"><div class="sidebar-header"><div class="sidebar-brand"><div class="sidebar-logo"><img src="/icons/icon-192.svg" alt="SIGTS logo"></div><div class="sidebar-title">Bwindi SIGTS</div></div></div><div class="sidebar-nav">${navItems.map(item => `<div class="nav-item-vertical ${window.currentView === item.id ? 'active' : ''}" onclick="navigateTo('${item.id}')"><div class="nav-icon-vertical">${icon(item.icon, 'icon-md')}</div><div class="nav-label-vertical">${item.label}</div></div>`).join('')}</div><div class="sidebar-logout" onclick="Auth.logout()">${icon('logout', 'icon-md')} Logout</div></div><div class="main-content" onclick="closeSidebar()"><div class="content-header"><h1>${getPageTitle(window.currentView)}</h1><div class="header-right"><span id="networkStatusBadge" class="net-status ${isOffline ? 'offline' : 'online'}">${statusText}</span><button class="icon-btn notif-btn" onclick="renderView('it_dashboard')">${icon('bell', 'icon-md')}<span id="rareAlertBadge" class="notif-badge hidden">0</span></button><button class="header-profile" onclick="navigateTo('profile')"><div class="header-avatar ${isITManager ? 'role-it' : (isGuide ? 'role-guide' : 'role-tourist')}">${avatarIcon}</div><div class="header-user-info"><div class="header-user-name">${escapeHtml(user.name)}</div><div class="header-user-role">${escapeHtml(roleLabel)}</div></div></button></div></div><div class="main-container">${content}</div></div></div>`;}
 
 function getAnimalIconName(animalName = '') {
     const value = animalName.toLowerCase();
@@ -262,78 +202,6 @@ async function renderDashboardContent() {
     const animals = await Content.getAnimals();
     const recommendations = await AI.getRecommendations(3);
     const seasonal = await AI.getSeasonalRecommendations();
-<<<<<<< HEAD
-    const quickCards = [
-        { id: 'animals', iconName: 'paw', label: 'Animals', count: `${animals.length || 3} species`, className: 'animals' },
-        { id: 'map', iconName: 'map', label: 'Map', className: 'map' },
-        { id: 'culture', iconName: 'book', label: 'Culture', className: 'culture' },
-        { id: 'info', iconName: 'info', label: 'Info', className: 'info' }
-    ];
-    const seasonalTitle = seasonal.season === 'dry' ? `${icon('sun', 'icon-sm')} Dry Season` : `${icon('rain', 'icon-sm')} Wet Season`;
-    const recommendationCategories = ['Wildlife', 'Nature', 'Culture'];
-    const seasonalDetails = {
-        'Gorilla Trekking': 'Clearer trails and better long-distance views.',
-        'Bird Watching': 'Active forest birds and strong photography light.',
-        'Cultural Experiences': 'Explore rich traditions and local heritage during the lush season.',
-        'Forest Walks': 'Fresh vegetation, misty trails, and vivid rainforest color.'
-    };
-
-    return `<div class="dashboard-screen">
-        <div class="quick-grid">
-            ${quickCards.map(card => `<button class="quick-card feature-card quick-photo ${card.className}" onclick="navigateTo('${card.id}')">
-                <span class="quick-icon">${icon(card.iconName, 'icon-xl')}</span>
-                <span class="quick-label">${card.label}</span>
-                ${card.count ? `<span class="quick-count">${card.count}</span>` : ''}
-            </button>`).join('')}
-        </div>
-        <div class="dashboard-main-grid">
-            <div class="dashboard-left-column">
-                <section class="section-card recommendations-card card">
-                    <div class="section-header"><h3>${icon('sparkles', 'icon-sm')} AI Recommendations</h3></div>
-                    <div id="recList">
-                        ${recommendations.map((r, index) => `<button class="rec-card recommendation-row" onclick="navigateTo('${index === 2 ? 'culture' : 'animals'}')">
-                            <span class="rec-avatar" aria-hidden="true"></span>
-                            <span class="rec-info">
-                                <span class="rec-title">${escapeHtml(r.name)}</span>
-                                <span class="rec-category-badge">${recommendationCategories[index] || 'Insight'}</span>
-                                <span class="rec-reason">${escapeHtml(r.reason)}</span>
-                            </span>
-                            <span class="rec-arrow">${icon('arrowRight', 'icon-sm')}</span>
-                        </button>`).join('')}
-                    </div>
-                </section>
-
-                <section class="section-card seasonal-card seasonal-insight-card card">
-                    <div class="seasonal-copy">
-                        <h3>${icon('leaf', 'icon-sm')} Seasonal Insight</h3>
-                        <p class="seasonal-phase">${seasonalTitle}</p>
-                        <ul class="seasonal-list">
-                            ${seasonal.recommendations.map(a => `<li><strong>${escapeHtml(a)}</strong><span>${escapeHtml(seasonalDetails[a] || 'Recommended for current park conditions.')}</span></li>`).join('')}
-                        </ul>
-                        <button class="seasonal-action" onclick="navigateTo('culture')">View Suggestions</button>
-                    </div>
-                    <div class="seasonal-thumb" aria-hidden="true"></div>
-                </section>
-            </div>
-
-            <aside class="dashboard-right-column">
-                <aside class="dashboard-quote-card card"><blockquote>"The best view comes after the hardest climb."</blockquote></aside>
-                <section class="section-card quick-actions-card card">
-                    <div class="section-header"><h3>${icon('target', 'icon-sm')} Quick Actions</h3></div>
-                    <div class="quick-actions-list">
-                        <button class="small-btn btn-secondary" onclick="navigateTo('map')">Open Map</button>
-                        <button class="small-btn btn-secondary" onclick="navigateTo('sightings')">Log Sighting</button>
-                        <button class="small-btn btn-secondary" onclick="navigateTo('info')">Safety Info</button>
-                    </div>
-                </section>
-                <section class="section-card safety-notice-card card">
-                    <div class="section-header"><h3>${icon('shield', 'icon-sm')} Safety Notice</h3></div>
-                    <div class="safety-copy">Maintain guide instructions, wildlife distance rules, and route check-ins throughout active sessions.</div>
-                </section>
-            </aside>
-        </div>
-    </div>`;
-=======
     return renderDashboardShell({
         primaryTitle: 'AI Recommendations',
         primaryIcon: 'target',
@@ -370,9 +238,7 @@ function renderDashboardShell({
             ? `<div class="rec-avatar metric-avatar metric-avatar-${escapeHtml(item.metricColor || 'default')}" aria-hidden="true"><span class="metric-avatar-icon">${icon(item.iconName || 'info', 'icon-md')}</span></div>`
             : `<div class="rec-avatar ${item.avatarClass || getRecommendationPhotoClass(item, index)}" aria-hidden="true">${item.iconName ? `<span class="rec-symbol">${icon(item.iconName, 'icon-md')}</span>` : ''}</div>`;
         return `<div class="${recClass}">${iconOnlyAvatar}<div class="rec-info"><div class="rec-title">${escapeHtml(item.title)}</div>${item.match ? `<div class="rec-match">${escapeHtml(item.match)}</div>` : ''}<div class="rec-reason">${escapeHtml(item.reason)}</div></div><button class="rec-go" aria-label="Open">${icon(item.goIcon || 'map', 'icon-sm')}</button></div>`;
-    }).join('') || '<div class="empty-state">No items available.</div>'}</div></div><div class="dashboard-quote-card"><blockquote>${escapeHtml(quote)}</blockquote></div></div><div class="section-card seasonal-card"><div class="section-header"><h3>${icon('leaf', 'icon-sm')} Seasonal: ${seasonalTitle}</h3></div><div class="seasonal-list">${seasonalItems.map((a) => `<div class="seasonal-item">• ${escapeHtml(a)}</div>`).join('') || '<div class="seasonal-item">• No seasonal updates available</div>'}</div><div class="seasonal-bottom"><div class="seasonal-image-strip photo-leaf" aria-hidden="true"></div><button class="seasonal-action-btn">${escapeHtml(seasonalActionLabel || 'View Suggestions')}</button></div></div>`;
->>>>>>> upstream/master
-}
+    }).join('') || '<div class="empty-state">No items available.</div>'}</div></div><div class="dashboard-quote-card"><blockquote>${escapeHtml(quote)}</blockquote></div></div><div class="section-card seasonal-card"><div class="section-header"><h3>${icon('leaf', 'icon-sm')} Seasonal: ${seasonalTitle}</h3></div><div class="seasonal-list">${seasonalItems.map((a) => `<div class="seasonal-item">• ${escapeHtml(a)}</div>`).join('') || '<div class="seasonal-item">• No seasonal updates available</div>'}</div><div class="seasonal-bottom"><div class="seasonal-image-strip photo-leaf" aria-hidden="true"></div><button class="seasonal-action-btn">${escapeHtml(seasonalActionLabel || 'View Suggestions')}</button></div></div>`;}
 
 async function renderAnimalsContent() {
     const animals = await Content.getAnimals();
@@ -855,18 +721,13 @@ async function renderCultureContent() {
 
 async function renderSightingsContent() {
     const sightings = await API.getRecentSightings(10);
-<<<<<<< HEAD
-    return `<div class="section-card"><div class="section-header"><h3>${icon('camera', 'icon-sm')} Recent Sightings</h3><button class="add-btn btn-primary" onclick="addSighting()">${icon('plus', 'icon-sm')} Report</button></div><div class="sighting-list">${sightings.length ? sightings.map(sighting => `
-=======
     const commentsBySighting = {};
     await Promise.all((sightings || []).map(async (sighting) => {
         const sid = sighting.sighting_id;
         if (!sid) return;
         commentsBySighting[sid] = await API.getSightingComments(sid, 3);
     }));
-    return `<div class="section-card"><div class="section-header"><h3>${icon('camera', 'icon-sm')} Recent Sightings</h3><button class="add-btn" onclick="addSighting()">${icon('plus', 'icon-sm')} Report</button></div><div class="sighting-list">${sightings.length ? sightings.map(sighting => `
->>>>>>> upstream/master
-        <div class="sighting-item">
+    return `<div class="section-card"><div class="section-header"><h3>${icon('camera', 'icon-sm')} Recent Sightings</h3><button class="add-btn" onclick="addSighting()">${icon('plus', 'icon-sm')} Report</button></div><div class="sighting-list">${sightings.length ? sightings.map(sighting => `        <div class="sighting-item">
             <div class="sighting-icon">${icon(getAnimalIconName(sighting.animal_name), 'icon-lg')}</div>
             <div class="sighting-main">
                 <div class="sighting-name">${escapeHtml(sighting.animal_name || 'Wildlife sighting')}</div>
@@ -910,9 +771,6 @@ function renderAIChatContent() {
 async function renderGuideDashboard() {
     const guideManager = getGuideOpsManager();
     const dashboard = await guideManager.getGuideDashboard();
-<<<<<<< HEAD
-    return `<div class="guide-dashboard"><div class="metrics-grid"><div class="metric-card"><div class="metric-value">${dashboard.stats.totalTours}</div><div class="metric-label">Total Tours</div></div><div class="metric-card"><div class="metric-value">${dashboard.stats.totalGuests}</div><div class="metric-label">Guests Served</div></div><div class="metric-card"><div class="metric-value">${dashboard.stats.averageRating}</div><div class="metric-label">Rating</div></div></div><div class="section-card"><div class="section-header"><h3>${icon('clock', 'icon-sm')} Today's Tours</h3></div>${dashboard.today.map(t => `<div class="tour-item"><div class="tour-name">${t.route_name || 'Gorilla Trek'}</div><div class="tour-time">${new Date(t.scheduled_start).toLocaleTimeString()}</div><button class="small-btn btn-secondary" onclick="startTour('${t.tour_session_id}')">Start Tour</button></div>`).join('') || '<div class="empty-state">No tours today</div>'}</div><div class="shift-controls"><button class="login-btn btn-primary" onclick="clockInOut()">${dashboard.activeShift ? 'Clock Out' : 'Clock In'}</button></div><div id="activeTourPanel" style="display:none"><div id="tourTimerDisplay" class="tour-timer">00:00:00</div><button class="small-btn btn-secondary" onclick="quickSighting()">Log Sighting</button><button class="small-btn btn-danger" onclick="endActiveTour()">End Tour</button></div></div>`;
-=======
     const animals = await Content.getAnimals();
     const guideItems = (dashboard.today || []).slice(0, 3).map((t) => ({
         title: t.route_name || 'Gorilla Trek',
@@ -943,17 +801,11 @@ async function renderGuideDashboard() {
         ],
         seasonalActionLabel: dashboard.activeShift ? 'Clock Out' : 'Clock In',
         animalCount: animals.length
-    })}<div class="section-card"><div class="section-header"><h3>${icon('clock', 'icon-sm')} Schedule Controls</h3></div><div class="seasonal-list">${(dashboard.today || []).length ? dashboard.today.map((t) => `<div class="seasonal-item"><strong>${escapeHtml(t.route_name || 'Tour Route')}</strong> - ${new Date(t.scheduled_start).toLocaleTimeString()} (${t.confirmed_guests || t.group_size || 0} guests) <button class="small-btn" onclick="startTour('${t.tour_session_id}')">Start</button></div>`).join('') : '<div class="seasonal-item">No tours today.</div>'}</div></div><div class="section-card"><div class="section-header"><h3>${icon('users', 'icon-sm')} Live Participants</h3></div><div class="seasonal-list">${participants.length ? participants.map((p) => `<div class="seasonal-item">${escapeHtml(p.first_name || p.username || 'Tourist')} ${escapeHtml(p.last_name || '')} - ${escapeHtml(p.pickup_location || 'In-session')}</div>`).join('') : '<div class="seasonal-item">No participants assigned yet.</div>'}</div></div><div class="shift-controls"><button class="login-btn" onclick="clockInOut()">${dashboard.activeShift ? 'Clock Out' : 'Clock In'}</button><button class="small-btn" onclick="addTourNotePrompt()">Add Tour Note</button></div><div id="activeTourPanel" style="${guideManager.activeTour ? 'display:block' : 'display:none'}"><div id="tourTimerDisplay" class="tour-timer">00:00:00</div><button onclick="quickSighting()">Log Sighting</button><button onclick="endActiveTour()">End Tour</button></div></div>`;
->>>>>>> upstream/master
-}
+    })}<div class="section-card"><div class="section-header"><h3>${icon('clock', 'icon-sm')} Schedule Controls</h3></div><div class="seasonal-list">${(dashboard.today || []).length ? dashboard.today.map((t) => `<div class="seasonal-item"><strong>${escapeHtml(t.route_name || 'Tour Route')}</strong> - ${new Date(t.scheduled_start).toLocaleTimeString()} (${t.confirmed_guests || t.group_size || 0} guests) <button class="small-btn" onclick="startTour('${t.tour_session_id}')">Start</button></div>`).join('') : '<div class="seasonal-item">No tours today.</div>'}</div></div><div class="section-card"><div class="section-header"><h3>${icon('users', 'icon-sm')} Live Participants</h3></div><div class="seasonal-list">${participants.length ? participants.map((p) => `<div class="seasonal-item">${escapeHtml(p.first_name || p.username || 'Tourist')} ${escapeHtml(p.last_name || '')} - ${escapeHtml(p.pickup_location || 'In-session')}</div>`).join('') : '<div class="seasonal-item">No participants assigned yet.</div>'}</div></div><div class="shift-controls"><button class="login-btn" onclick="clockInOut()">${dashboard.activeShift ? 'Clock Out' : 'Clock In'}</button><button class="small-btn" onclick="addTourNotePrompt()">Add Tour Note</button></div><div id="activeTourPanel" style="${guideManager.activeTour ? 'display:block' : 'display:none'}"><div id="tourTimerDisplay" class="tour-timer">00:00:00</div><button onclick="quickSighting()">Log Sighting</button><button onclick="endActiveTour()">End Tour</button></div></div>`;}
 
 async function renderITManagerDashboard() {
     const metrics = await ITAPI.getSystemMetrics();
     const users = await ITAPI.getUserList();
-<<<<<<< HEAD
-    const schemaStatus = await ITAPI.getSchemaStatus();
-    return `<div class="it-dashboard"><div class="welcome-card"><h2>Welcome back, ${escapeHtml(Auth.getCurrentUser()?.name)}</h2></div><div class="metrics-grid"><div class="metric-card"><div class="metric-value">${metrics.activeUsers}</div><div class="metric-label">Active Users</div></div><div class="metric-card"><div class="metric-value">${metrics.syncQueueSize}</div><div class="metric-label">Pending Sync</div></div><div class="metric-card"><div class="metric-value">${metrics.totalSightings}</div><div class="metric-label">Sightings</div></div><div class="metric-card"><div class="metric-value">${metrics.totalStaff || 0}</div><div class="metric-label">Staff Total</div></div><div class="metric-card"><div class="metric-value">${metrics.guidesOnDuty || 0}</div><div class="metric-label">Guides Active</div></div><div class="metric-card"><div class="metric-value">${metrics.inventoryItems || 0}</div><div class="metric-label">Inventory Items</div></div></div><div class="section-card"><div class="section-header"><h3>${icon('users', 'icon-sm')} Users</h3></div>${users.map(u => `<div class="user-item">${u.full_name} (${u.user_type}) - ${u.department || ''}</div>`).join('')}</div><div class="section-card"><div class="section-header"><h3>${icon('database', 'icon-sm')} Database Schema (Extended)</h3></div><div class="schema-items">${Object.entries(schemaStatus).slice(0,12).map(([name, info]) => `<div class="schema-item">${icon('chart', 'icon-sm')} ${name}: ${info.count} records</div>`).join('')}</div></div><div class="admin-actions"><button class="admin-action-btn btn-primary" onclick="handleMFASetup()">${icon('shield', 'icon-sm')} Configure MFA</button><button class="admin-action-btn btn-secondary" onclick="clearAllCache()">Clear Cache</button><button class="admin-action-btn btn-secondary" onclick="exportData()">Export Data</button><button class="admin-action-btn danger btn-danger" onclick="resetApp()">Reset App</button></div></div>`;
-=======
     const interactive = await ITAPI.getInteractiveAnalytics();
     const liveOps = await ITAPI.getLiveOperations();
     const feedbackInsights = await ITAPI.getFeedbackInsights(30);
@@ -1014,9 +866,7 @@ async function renderITManagerDashboard() {
         ],
         seasonalActionLabel: 'View Suggestions',
         animalCount: animals.length
-    })}<div class="section-card"><div class="section-header"><h3>${icon('users', 'icon-sm')} Users</h3></div>${users.map(u => `<div class="user-item">${u.full_name} (${u.user_type}) - ${u.department || ''}</div>`).join('')}</div><div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon('chart', 'icon-sm')} Visitor Flow (7 days)</h3></div><div class="analytics-list">${flowBars}</div></div><div class="section-card"><div class="section-header"><h3>${icon('target', 'icon-sm')} Popular Content</h3></div><div class="analytics-list">${popularRows}</div></div></div><div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon('users', 'icon-sm')} User Type Demographics</h3></div><div class="analytics-list">${demographicRows}</div></div><div class="section-card"><div class="section-header"><h3>${icon('map', 'icon-sm')} Congestion Guidance</h3></div><div class="seasonal-list">${(interactive.congestionRecommendations || []).map((r) => `<div class="seasonal-item">• ${escapeHtml(r)}</div>`).join('') || '<div class="seasonal-item">• No congestion recommendations available</div>'}</div></div></div><div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon('building', 'icon-sm')} Intranet Connectivity</h3></div><div class="analytics-list"><div class="analytics-row"><span>Intranet</span><div class="analytics-bar"><div style="width:${liveOps.intranetStatus?.isIntranet ? 100 : 35}%;"></div></div><strong>${liveOps.intranetStatus?.isIntranet ? 'Connected' : 'External'}</strong></div><div class="analytics-row"><span>Device IP</span><span></span><strong>${escapeHtml(liveOps.intranetStatus?.ip || 'Unknown')}</strong></div><div class="analytics-row"><span>Pending Sync</span><span></span><strong>${liveOps.syncStatus?.pending || liveOps.syncStatus?.pending_items || 0}</strong></div></div></div><div class="section-card"><div class="section-header"><h3>${icon('user', 'icon-sm')} Live Peers / Guests</h3></div><div class="seasonal-list">${(liveOps.peers || []).length ? liveOps.peers.slice(0, 8).map((p) => `<div class="seasonal-item">• ${escapeHtml(p.name || 'Peer')} (${escapeHtml(p.type || 'user')})${p.location ? ` @ ${Number(p.location.lat).toFixed(4)}, ${Number(p.location.lng).toFixed(4)}` : ''}</div>`).join('') : '<div class="seasonal-item">• No live peers detected in last 5 minutes.</div>'}</div></div></div><div class="section-card"><div class="section-header"><h3>${icon('note', 'icon-sm')} Feedback & Improvements (30 days)</h3></div><div class="analytics-list"><div class="analytics-row"><span>Total Feedback</span><span></span><strong>${feedbackInsights.summary?.total_feedback || 0}</strong></div><div class="analytics-row"><span>Average Rating</span><span></span><strong>${feedbackInsights.summary?.avg_rating || 0}</strong></div><div class="analytics-row"><span>Bug Reports</span><span></span><strong>${feedbackInsights.summary?.bug_reports || 0}</strong></div><div class="analytics-row"><span>Feature Requests</span><span></span><strong>${feedbackInsights.summary?.feature_requests || 0}</strong></div><div class="analytics-row"><span>Responded</span><span></span><strong>${feedbackInsights.summary?.responded_count || 0}</strong></div></div><div class="seasonal-list">${(feedbackInsights.recent || []).slice(0, 5).map((item) => `<div class="seasonal-item">• ${escapeHtml(item.category)} - ${escapeHtml(item.comment || 'No comment')} ${item.response_text ? '<span style="color:#2E7D32;">(Responded)</span>' : `<button class=\"small-btn\" onclick=\"respondToFeedbackPrompt('${item.feedback_id}')\">Respond</button>`}</div>`).join('') || '<div class="seasonal-item">• No recent feedback</div>'}</div></div>${rareAlertsHtml}<div class="admin-actions"><button class="admin-action-btn" onclick="handleMFASetup()">${icon('shield', 'icon-sm')} Configure MFA</button><button class="admin-action-btn" onclick="clearAllCache()">Clear Cache</button><button class="admin-action-btn" onclick="exportData()">Export Data</button><button class="admin-action-btn danger" onclick="resetApp()">Reset App</button></div></div>`;
->>>>>>> upstream/master
-}
+    })}<div class="section-card"><div class="section-header"><h3>${icon('users', 'icon-sm')} Users</h3></div>${users.map(u => `<div class="user-item">${u.full_name} (${u.user_type}) - ${u.department || ''}</div>`).join('')}</div><div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon('chart', 'icon-sm')} Visitor Flow (7 days)</h3></div><div class="analytics-list">${flowBars}</div></div><div class="section-card"><div class="section-header"><h3>${icon('target', 'icon-sm')} Popular Content</h3></div><div class="analytics-list">${popularRows}</div></div></div><div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon('users', 'icon-sm')} User Type Demographics</h3></div><div class="analytics-list">${demographicRows}</div></div><div class="section-card"><div class="section-header"><h3>${icon('map', 'icon-sm')} Congestion Guidance</h3></div><div class="seasonal-list">${(interactive.congestionRecommendations || []).map((r) => `<div class="seasonal-item">• ${escapeHtml(r)}</div>`).join('') || '<div class="seasonal-item">• No congestion recommendations available</div>'}</div></div></div><div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon('building', 'icon-sm')} Intranet Connectivity</h3></div><div class="analytics-list"><div class="analytics-row"><span>Intranet</span><div class="analytics-bar"><div style="width:${liveOps.intranetStatus?.isIntranet ? 100 : 35}%;"></div></div><strong>${liveOps.intranetStatus?.isIntranet ? 'Connected' : 'External'}</strong></div><div class="analytics-row"><span>Device IP</span><span></span><strong>${escapeHtml(liveOps.intranetStatus?.ip || 'Unknown')}</strong></div><div class="analytics-row"><span>Pending Sync</span><span></span><strong>${liveOps.syncStatus?.pending || liveOps.syncStatus?.pending_items || 0}</strong></div></div></div><div class="section-card"><div class="section-header"><h3>${icon('user', 'icon-sm')} Live Peers / Guests</h3></div><div class="seasonal-list">${(liveOps.peers || []).length ? liveOps.peers.slice(0, 8).map((p) => `<div class="seasonal-item">• ${escapeHtml(p.name || 'Peer')} (${escapeHtml(p.type || 'user')})${p.location ? ` @ ${Number(p.location.lat).toFixed(4)}, ${Number(p.location.lng).toFixed(4)}` : ''}</div>`).join('') : '<div class="seasonal-item">• No live peers detected in last 5 minutes.</div>'}</div></div></div><div class="section-card"><div class="section-header"><h3>${icon('note', 'icon-sm')} Feedback & Improvements (30 days)</h3></div><div class="analytics-list"><div class="analytics-row"><span>Total Feedback</span><span></span><strong>${feedbackInsights.summary?.total_feedback || 0}</strong></div><div class="analytics-row"><span>Average Rating</span><span></span><strong>${feedbackInsights.summary?.avg_rating || 0}</strong></div><div class="analytics-row"><span>Bug Reports</span><span></span><strong>${feedbackInsights.summary?.bug_reports || 0}</strong></div><div class="analytics-row"><span>Feature Requests</span><span></span><strong>${feedbackInsights.summary?.feature_requests || 0}</strong></div><div class="analytics-row"><span>Responded</span><span></span><strong>${feedbackInsights.summary?.responded_count || 0}</strong></div></div><div class="seasonal-list">${(feedbackInsights.recent || []).slice(0, 5).map((item) => `<div class="seasonal-item">• ${escapeHtml(item.category)} - ${escapeHtml(item.comment || 'No comment')} ${item.response_text ? '<span style="color:#2E7D32;">(Responded)</span>' : `<button class=\"small-btn\" onclick=\"respondToFeedbackPrompt('${item.feedback_id}')\">Respond</button>`}</div>`).join('') || '<div class="seasonal-item">• No recent feedback</div>'}</div></div>${rareAlertsHtml}<div class="admin-actions"><button class="admin-action-btn" onclick="handleMFASetup()">${icon('shield', 'icon-sm')} Configure MFA</button><button class="admin-action-btn" onclick="clearAllCache()">Clear Cache</button><button class="admin-action-btn" onclick="exportData()">Export Data</button><button class="admin-action-btn danger" onclick="resetApp()">Reset App</button></div></div>`;}
 
 // =====================================================
 // INTRANET DASHBOARD (HR, Announcements, Inventory)
@@ -1506,10 +1356,6 @@ function clearAllCache() {
     location.reload();
 }
 
-<<<<<<< HEAD
-function exportData() {
-    showToast('Data exported (demo)', 'info');
-=======
 async function exportData() {
     const [animals, locations, sightings, feedback] = await Promise.all([
         API.getAnimals(),
@@ -1529,9 +1375,7 @@ async function exportData() {
     a.download = `sigts-export-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    alert('Data exported successfully.');
->>>>>>> upstream/master
-}
+    alert('Data exported successfully.');}
 
 async function resetApp() {
     if (await showConfirmDialog('Reset all data?')) {
@@ -1540,10 +1384,6 @@ async function resetApp() {
     }
 }
 
-<<<<<<< HEAD
-function addSighting() {
-    showToast('Report sighting feature coming soon', 'info');
-=======
 async function addSighting() {
     const [animals, locations] = await Promise.all([API.getAnimals(), API.getLocations()]);
     if (!animals.length || !locations.length) {
@@ -1582,9 +1422,7 @@ async function addSighting() {
         if (window.currentView === 'sightings') renderView('sightings');
     } else {
         alert('Failed to report sighting.');
-    }
->>>>>>> upstream/master
-}
+    }}
 
 async function startTour(tourId) {
     const m = getGuideOpsManager();
@@ -1597,17 +1435,6 @@ async function endActiveTour() {
     const m = getGuideOpsManager();
     const result = await m.endTour(m.activeTour?.tour_session_id);
     document.getElementById('activeTourPanel').style.display = 'none';
-<<<<<<< HEAD
-    showToast('Tour ended', 'info');
-}
-
-async function quickSighting() {
-    const animal = await showPromptDialog('Animal seen?');
-    if (animal) {
-        const m = new TourGuideManager();
-        await m.quickSighting(animal, 1);
-        showToast('Sighting recorded!', 'success');
-=======
     alert('Tour ended');
     const askFeedback = confirm('Would you like to submit completion feedback now?');
     if (askFeedback) {
@@ -1624,9 +1451,7 @@ async function quickSighting() {
     const nearest = locations[0];
     if (!animal || !nearest) {
         alert('Missing seeded animal/location data.');
-        return;
->>>>>>> upstream/master
-    }
+        return;    }
     const manager = getGuideOpsManager();
     const result = await API.reportSighting({
         animal_id: animal.animal_id || animal.id,
@@ -1666,244 +1491,6 @@ async function clockInOut() {
     renderView('guide_dashboard');
 }
 
-<<<<<<< HEAD
-function renderAuthPortal(activeTab = 'login') {
-    const isLogin = activeTab === 'login';
-    const heading = isLogin ? 'Welcome Back' : 'Create Account';
-    const subheading = isLogin ? 'Access your SIGTS dashboard' : 'Register for secure park access';
-    const trustCopy = isLogin
-        ? 'Secure access for tourists, guides, park officials, and IT managers.'
-        : 'Your information is protected and reviewed according to park access rules.';
-
-    return `<div class="auth-portal ${isLogin ? 'auth-mode-login' : 'auth-mode-register'}">
-        <aside class="auth-portal-side">
-            <div class="auth-side-brand">
-                <div class="auth-side-logo">${icon('map', 'icon-lg')}</div>
-                <div>
-                    <div class="auth-side-title">Bwindi SIGTS</div>
-                    <div class="auth-side-subtitle">Smart Information Guide Tour System</div>
-                </div>
-            </div>
-
-            <div class="auth-side-message">
-                <span class="auth-side-kicker">Welcome</span>
-                <h1>Smart Park Access & Information Portal</h1>
-                <p>Manage wildlife insights, guide access, tourist profiles, sightings, and secure park information from one trusted platform.</p>
-                <p class="auth-side-roles">Tourists • Guides • Officials • IT Managers</p>
-            </div>
-
-            <div class="auth-side-stats" aria-label="System access highlights">
-                <div class="auth-side-stat">${icon('paw', 'icon-sm')} Wildlife Records</div>
-                <div class="auth-side-stat">${icon('ticket', 'icon-sm')} Guide Access</div>
-                <div class="auth-side-stat">${icon('megaphone', 'icon-sm')} Park Notices</div>
-                <div class="auth-side-stat">${icon('shield', 'icon-sm')} Secure Roles</div>
-            </div>
-
-            <div class="auth-side-footer">
-                ${icon('shield', 'icon-sm')}
-                <span>Secure access for tourists, guides, and IT managers.</span>
-            </div>
-        </aside>
-
-        <main class="auth-portal-main">
-            <section class="auth-card">
-                <div class="auth-tabs" role="tablist">
-                    <button
-                        type="button"
-                        class="auth-tab ${isLogin ? 'active' : ''}"
-                        onclick="renderView('login')">
-                        Log In
-                    </button>
-
-                    <button
-                        type="button"
-                        class="auth-tab ${!isLogin ? 'active' : ''}"
-                        onclick="renderView('register')">
-                        Create Account
-                    </button>
-                </div>
-
-                <div class="auth-form-head">
-                    <span class="auth-kicker">${isLogin ? 'Secure Access Portal' : 'Role Enrollment'}</span>
-                    <div class="auth-role-badge">${icon('shield', 'icon-sm')} <span>Role-based login enabled</span></div>
-                    <h2>${heading}</h2>
-                    <p>${subheading}</p>
-                </div>
-
-                ${isLogin ? renderLoginFormOnly() : renderRegisterFormOnly()}
-                <div class="auth-trust-panel">${trustCopy}</div>
-            </section>
-        </main>
-    </div>`;
-}
-
-function renderLoginFormOnly() {
-    return `<form class="auth-form" onsubmit="event.preventDefault(); handleLogin();">
-        <label class="auth-field">
-            <span class="auth-field-label">Email or Username</span>
-            <span class="auth-input-shell">
-                ${icon('mail', 'icon-sm')}
-                <input 
-                    type="text" 
-                    id="loginUsername" 
-                    class="auth-input" 
-                    placeholder="Enter your email or username"
-                    autocomplete="username">
-            </span>
-        </label>
-
-        <label class="auth-field">
-            <span class="auth-field-label">Password</span>
-            <span class="auth-input-shell">
-                ${icon('lock', 'icon-sm')}
-                <input 
-                    type="password" 
-                    id="loginPassword" 
-                    class="auth-input" 
-                    placeholder="Enter your password"
-                    autocomplete="current-password">
-
-                <button 
-                    type="button" 
-                    class="auth-ghost-icon" 
-                    onclick="togglePasswordVisibility('loginPassword', this)" 
-                    aria-label="Show password">
-                    ${icon('eye', 'icon-sm')}
-                </button>
-            </span>
-        </label>
-
-        <div class="auth-options-row">
-            <label class="auth-check">
-                <input type="checkbox" id="rememberMe" checked>
-                <span class="auth-check-box">${icon('check', 'icon-sm')}</span>
-                <span>Remember me</span>
-            </label>
-
-            <button type="button" class="auth-link-btn" onclick="handleForgotPassword()">
-                Forgot password?
-            </button>
-        </div>
-
-        <button type="submit" class="auth-primary-btn">
-            ${icon('leaf', 'icon-sm')} LOGIN TO DASHBOARD
-        </button>
-
-        <div class="auth-divider-lite"><span></span><em>OR</em><span></span></div>
-        <button type="button" class="auth-social-btn" onclick="showToast('Google sign-in will be connected in production.', 'info')">
-            ${icon('user', 'icon-sm')} Continue with Google
-        </button>
-        <p class="auth-inline-cta">New here? <button type="button" class="auth-link-btn" onclick="renderView('register')">Create account</button></p>
-        <div id="authFeedback" class="auth-feedback" hidden></div>
-    </form>`;
-}
-
-function renderRegisterFormOnly() {
-    return `<form class="auth-form auth-register-form" onsubmit="event.preventDefault(); handleRegistration();">
-        <div class="auth-grid">
-            <label class="auth-field">
-                <span class="auth-field-label">Full Name</span>
-                <span class="auth-input-shell">
-                    ${icon('user', 'icon-sm')}
-                    <input 
-                        type="text" 
-                        id="regFullName" 
-                        class="auth-input" 
-                        placeholder="Your full name"
-                        autocomplete="name">
-                </span>
-            </label>
-
-            <label class="auth-field">
-                <span class="auth-field-label">Username</span>
-                <span class="auth-input-shell">
-                    ${icon('at', 'icon-sm')}
-                    <input 
-                        type="text" 
-                        id="regUsername" 
-                        class="auth-input" 
-                        placeholder="Choose username"
-                        autocomplete="username">
-                </span>
-            </label>
-        </div>
-
-        <label class="auth-field">
-            <span class="auth-field-label">Email</span>
-            <span class="auth-input-shell">
-                ${icon('mail', 'icon-sm')}
-                <input 
-                    type="email" 
-                    id="regEmail" 
-                    class="auth-input" 
-                    placeholder="name@example.com"
-                    autocomplete="email">
-            </span>
-        </label>
-
-        <div class="auth-grid">
-            <label class="auth-field">
-                <span class="auth-field-label">Password</span>
-                <span class="auth-input-shell">
-                    ${icon('lock', 'icon-sm')}
-                    <input 
-                        type="password" 
-                        id="regPassword" 
-                        class="auth-input" 
-                        placeholder="Create password"
-                        autocomplete="new-password">
-
-                    <button 
-                        type="button" 
-                        class="auth-ghost-icon" 
-                        onclick="togglePasswordVisibility('regPassword', this)" 
-                        aria-label="Show password">
-                        ${icon('eye', 'icon-sm')}
-                    </button>
-                </span>
-            </label>
-
-            <label class="auth-field">
-                <span class="auth-field-label">Confirm</span>
-                <span class="auth-input-shell">
-                    ${icon('lock', 'icon-sm')}
-                    <input 
-                        type="password" 
-                        id="regConfirmPassword" 
-                        class="auth-input" 
-                        placeholder="Repeat password"
-                        autocomplete="new-password">
-
-                    <button 
-                        type="button" 
-                        class="auth-ghost-icon" 
-                        onclick="togglePasswordVisibility('regConfirmPassword', this)" 
-                        aria-label="Show password">
-                        ${icon('eye', 'icon-sm')}
-                    </button>
-                </span>
-            </label>
-        </div>
-
-        <button type="submit" class="auth-primary-btn">
-            ${icon('leaf', 'icon-sm')} CREATE SECURE ACCOUNT
-        </button>
-        <div id="authFeedback" class="auth-feedback" hidden></div>
-
-        <div class="auth-secure-note">
-            ${icon('shield', 'icon-md')}
-            <span>Your information is secure with us.</span>
-        </div>
-    </form>`;
-}
-
-function renderLoginScreen() {
-    return renderAuthPortal('login');
-}
-
-function renderRegisterScreen() {
-    return renderAuthPortal('register');
-=======
 window.addTourNotePrompt = async function () {
     const note = prompt('Add a guide note for current/next tour:');
     if (!note) return;
@@ -1995,9 +1582,15 @@ function renderAuthMergedScreen(activePanel = 'login') {
                 </div>
             </section>
         </div>
-    </div>`;
->>>>>>> upstream/master
+    </div>`;}
+function renderLoginScreen() {
+    return renderAuthMergedScreen('login');
 }
+
+function renderRegisterScreen() {
+    return renderAuthMergedScreen('register');
+}
+
 async function renderView(view, options = {}) {
     const safeView = normalizeView(view);
     const shouldUpdateHash = options.updateHash === true;
@@ -2010,35 +1603,22 @@ async function renderView(view, options = {}) {
         }
     }
 
-<<<<<<< HEAD
-=======
-function renderLoginScreen() {
-    return renderAuthMergedScreen('login');
-}
-
-function renderRegisterScreen() {
-    return renderAuthMergedScreen('register');
-}
-
-async function renderView(view) {
-    window.currentView = view;
->>>>>>> upstream/master
     const app = document.getElementById('app');
     if (!app) return;
 
     document.body.classList.toggle('auth-page', PUBLIC_VIEWS.has(safeView));
-    
+
     if (!Auth.isAuthenticated() && !PUBLIC_VIEWS.has(safeView)) {
         navigateTo('login');
         return;
     }
 
-    if (view !== 'map') {
+    if (safeView !== 'map') {
         teardownLiveMap();
     }
-    
+
     let content = '';
-    switch(safeView) {
+    switch (safeView) {
         case 'login': app.innerHTML = renderLoginScreen(); return;
         case 'register': app.innerHTML = renderRegisterScreen(); return;
         case 'dashboard': content = await renderDashboardContent(); break;
@@ -2054,12 +1634,13 @@ async function renderView(view) {
         case 'intranet': content = await renderIntranetDashboard(); break;
         default: content = await renderDashboardContent();
     }
+
     app.innerHTML = renderMainLayout(content);
     refreshNetworkStatusBadge();
     await refreshRareAlertBadge();
-    if (view === 'map') {
+    if (safeView === 'map') {
         await initializeLiveMap();
-    } else if (view === 'profile') {
+    } else if (safeView === 'profile') {
         await loadRecentFeedback();
     }
 }

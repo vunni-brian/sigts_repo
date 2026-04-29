@@ -5,7 +5,6 @@
 // APP STATE MANAGEMENT (Extended for Intranet)
 // =====================================================
 
-<<<<<<< HEAD
 const API_BASE_URL = (() => {
     const configuredBase = window.__SIGTS_API_BASE__;
     if (typeof configuredBase === 'string' && configuredBase.trim()) {
@@ -20,20 +19,6 @@ const API_BASE_URL = (() => {
 
     return `${window.location.origin}/api`;
 })();
-=======
-function resolveApiBaseUrl() {
-    const explicit = window.localStorage?.getItem('sigts_api_base_url');
-    if (explicit) return explicit.replace(/\/$/, '');
-    const configured = window.__SIGTS_API_BASE_URL__;
-    if (configured) return String(configured).replace(/\/$/, '');
-    const protocol = window.location.protocol || 'http:';
-    const hostname = window.location.hostname || 'localhost';
-    return `${protocol}//${hostname}:8000/api`;
-}
-
-const API_BASE_URL = resolveApiBaseUrl();
->>>>>>> upstream/master
-
 class APIService {
     getToken() {
         return localStorage.getItem('token') || sessionStorage.getItem('token');
