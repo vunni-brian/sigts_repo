@@ -111,7 +111,7 @@ class AuthManager {
         });
 
         if (result?.success && result.mfaRequired && result.mfaToken) {
-            const code = prompt('Enter your 6-digit authenticator code');
+            const code = await window.showPromptDialog('Enter your 6-digit authenticator code');
             if (!code) return { success: false, error: 'MFA code required' };
             const mfaResult = await API.request('/auth/mfa/complete', {
                 method: 'POST',
@@ -130,6 +130,54 @@ class AuthManager {
             return this.completeLogin(result.user, result.token, rememberMe);
         }
 
+        const demoCredentials = {
+            tourist: {
+                password: 'tourist123',
+                user: {
+                    id: 'demo-tourist',
+                    name: 'Demo Tourist',
+                    email: 'tourist@demo.local',
+                    username: 'tourist',
+                    role: 'tourist',
+                    user_type: 'tourist',
+                    department: 'Visitor'
+                },
+                token: 'demo.tourist.token'
+            },
+            guide: {
+                password: 'guide123',
+                user: {
+                    id: 'demo-guide',
+                    name: 'Demo Guide',
+                    email: 'guide@demo.local',
+                    username: 'guide',
+                    role: 'guide',
+                    user_type: 'guide',
+                    department: 'Tour Operations'
+                },
+                token: 'demo.guide.token'
+            },
+            it_manager: {
+                password: 'itmanager123',
+                user: {
+                    id: 'demo-admin',
+                    name: 'IT Manager',
+                    email: 'admin@demo.local',
+                    username: 'it_manager',
+                    role: 'it_manager',
+                    user_type: 'it_manager',
+                    department: 'IT'
+                },
+                token: 'demo.it_manager.token'
+            }
+        };
+
+        const key = String(username || '').trim().toLowerCase();
+        const demo = demoCredentials[key];
+        if (demo && password === demo.password) {
+            return this.completeLogin(demo.user, demo.token, rememberMe);
+        }
+
         this.failedAttempts++;
         return {
             success: false,
@@ -146,7 +194,8 @@ class AuthManager {
         if (!user) return { success: false, error: 'User not found' };
         this.twoFactorPending = false;
         this.pending2FACode = null;
-        return this.completeLogin(user, false);
+        const demoToken = `demo.${btoa(String(user.id || user.user_id || 'user')).replace(/=+$/g, '')}.token`;
+        return this.completeLogin(user, demoToken, true);
     }
 
     completeLogin(user, token, rememberMe) {
@@ -179,14 +228,14 @@ class AuthManager {
 
     send2FACode(email, code) {
         console.log(`2FA code for ${email}: ${code}`);
-        alert(`Demo 2FA: Your verification code is ${code}`);
+        window.showToast(`Demo 2FA code: ${code}`, 'info');
     }
 
     startSessionTimer() {
         if (this.sessionTimer) clearTimeout(this.sessionTimer);
         this.sessionTimer = setTimeout(() => {
             this.logout();
-            alert('Your session has expired. Please login again.');
+            window.showToast('Your session has expired. Please login again.', 'warning');
         }, this.sessionTimeout);
     }
 
@@ -506,7 +555,7 @@ class ContentManager {
         AppState.cachedContent.version++;
         localStorage.setItem('offline_version', AppState.cachedContent.version);
         this.updateStorageUsage();
-        alert('Offline content updated from server!');
+        window.showToast('Offline content updated from server!', 'success');
     }
 
     updateStorageUsage() {

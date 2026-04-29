@@ -1,5 +1,4 @@
 // Global functions for UI actions
-
 var Auth = new AuthManager();
 var Geofence = new GeofenceManager();
 var Content = new ContentManager();
@@ -45,18 +44,74 @@ window.OfflineSync = OfflineSync;
 window.ITAPI = ITAPI;
 window.Intranet = Intranet;
 
+function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('/sw.js').catch((error) => {
+        console.error('Service worker registration failed:', error);
+    });
+}
+
+function initHashRouting() {
+    window.addEventListener('hashchange', () => {
+        const hashView = window.location.hash.replace('#', '');
+        if (!hashView) return;
+        renderView(hashView, { updateHash: false });
+    });
+}
+
 async function init() {
     showLoading();
+    registerServiceWorker();
+    initHashRouting();
+
     await Geofence.init();
 
     const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-    if (!users.some(u => u.role === 'it_manager')) {
-        users.push({ id: 'admin1', name: 'IT Administrator', email: 'admin@bwindi.com', username: 'admin', role: 'it_manager', department: 'IT', createdAt: new Date().toISOString() });
-        users.push({ id: 'guide1', name: 'Demo Guide', email: 'guide@bwindi.com', username: 'guide', role: 'guide', department: 'Tour Operations', createdAt: new Date().toISOString() });
-        users.push({ id: 'tourist1', name: 'Demo Tourist', email: 'tourist@example.com', username: 'tourist', role: 'tourist', department: 'Visitor', createdAt: new Date().toISOString() });
+
+    if (!users.some(user => user.role === 'it_manager')) {
+        users.push(
+            {
+                id: 'admin1',
+                name: 'IT Administrator',
+                email: 'admin@bwindi.com',
+                username: 'admin',
+                role: 'it_manager',
+                department: 'IT',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 'guide1',
+                name: 'Demo Guide',
+                email: 'guide@bwindi.com',
+                username: 'guide',
+                role: 'guide',
+                department: 'Tour Operations',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 'tourist1',
+                name: 'Demo Tourist',
+                email: 'tourist@example.com',
+                username: 'tourist',
+                role: 'tourist',
+                department: 'Visitor',
+                createdAt: new Date().toISOString()
+            }
+        );
+
         localStorage.setItem('registeredUsers', JSON.stringify(users));
     }
 
+<<<<<<< HEAD
+    const requestedView = window.location.hash.replace('#', '');
+
+    if (Auth.isAuthenticated()) {
+        navigateTo(requestedView || 'dashboard');
+        return;
+    }
+
+    navigateTo(requestedView === 'register' ? 'register' : 'login');
+=======
     if (Auth.isAuthenticated()) renderView('dashboard');
     else renderView('login');
 
@@ -64,6 +119,7 @@ async function init() {
     window.addEventListener('offline', () => window.refreshNetworkStatusBadge?.());
     if (rareAlertPollTimer) clearInterval(rareAlertPollTimer);
     rareAlertPollTimer = setInterval(() => window.refreshRareAlertBadge?.(), 20000);
+>>>>>>> upstream/master
 }
 
 init();

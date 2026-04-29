@@ -44,9 +44,21 @@ function icon(name, className = '') {
         download: '<path d="M12 4v10"/><path d="M8 10l4 4 4-4"/><path d="M4 19h16"/>',
         plus: '<path d="M12 5v14M5 12h14"/>',
         menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+<<<<<<< HEAD
+        note: '<path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4"/><path d="M9 11h6M9 15h6"/>',
+        mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+        lock: '<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+        eye: '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+        at: '<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>',
+        check: '<path d="M20 6L9 17l-5-5"/>',
+        arrowRight: '<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>',
+        chevronDown: '<path d="M6 9l6 6 6-6"/>',
+        sparkles: '<path d="M12 3l1.6 4.3L18 9l-4.4 1.7L12 15l-1.6-4.3L6 9l4.4-1.7z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8z"/><path d="M5 14l.7 1.8L8 16.5l-2.3.7L5 19l-.7-1.8L2 16.5l2.3-.7z"/>'
+=======
         note: '<path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4"/><path d="M9 11h6M9 15h6"/>'
         ,
         smile: '<circle cx="12" cy="12" r="9"/><path d="M8 10h.01M16 10h.01"/><path d="M8 15c1.2 1.2 2.3 1.8 4 1.8s2.8-.6 4-1.8"/>'
+>>>>>>> upstream/master
     };
     const content = icons[name] || icons.info;
     return `<svg class="${classes}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${content}</svg>`;
@@ -86,12 +98,60 @@ function getRecommendationPhotoClass(item = {}, index = 0) {
 
 function getPageTitle(view) {
     const titles = { dashboard: 'Dashboard', animals: 'Animals', map: 'Map', culture: 'Culture', sightings: 'Sightings', profile: 'Profile', info: 'Info', ai_chat: 'AI Assistant', guide_dashboard: 'Guide Dashboard', it_dashboard: 'Admin Dashboard', intranet: 'Intranet Hub' };
-    return titles[view] || 'Bwindi Tour Guide';
+    return titles[view] || 'SIGTS Platform';
 }
 
-function navigateTo(view) {
-    window.currentView = view;
-    renderView(view);
+function getPageSubtitle(view) {
+    const subtitles = {
+        dashboard: "Welcome back, explore today's recommendations.",
+        guide_dashboard: 'Track tours, guests, and active shifts.',
+        it_dashboard: 'Monitor users, sync status, and platform health.',
+        intranet: 'Manage staff communication and operations.'
+    };
+    return subtitles[view] || 'Role-based access with secure operational controls.';
+}
+
+const PUBLIC_VIEWS = new Set(['login', 'register']);
+const APP_VIEWS = new Set([
+    'login',
+    'register',
+    'dashboard',
+    'animals',
+    'map',
+    'culture',
+    'sightings',
+    'profile',
+    'info',
+    'ai_chat',
+    'guide_dashboard',
+    'it_dashboard',
+    'intranet'
+]);
+
+function normalizeView(view) {
+    const candidate = String(view || '').trim();
+    return APP_VIEWS.has(candidate) ? candidate : 'dashboard';
+}
+
+function navigateTo(view, options = {}) {
+    const targetView = normalizeView(view);
+    const shouldUpdateHash = options.updateHash !== false;
+
+    if (shouldUpdateHash) {
+        const targetHash = `#${targetView}`;
+        if (window.location.hash !== targetHash) {
+            window.location.hash = targetHash;
+            return;
+        }
+    }
+
+    renderView(targetView, { updateHash: false });
+}
+
+function formatRoleName(role = 'tourist') {
+    return String(role)
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, letter => letter.toUpperCase());
 }
 
 let liveMapInstance = null;
@@ -118,8 +178,12 @@ function renderMainLayout(content) {
     const user = Auth.getCurrentUser() || { name: 'Guest', role: 'tourist' };
     const isGuide = user?.role === 'guide' || user?.userType === 'guide';
     const isITManager = user?.role === 'it_manager' || user?.userType === 'it_manager';
+<<<<<<< HEAD
+    const roleLabel = formatRoleName(user.role || user.userType || 'tourist');
+=======
     const roleLabel = (user.role || user.userType || 'tourist').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
     const avatarIcon = isITManager ? icon('chart', 'icon-md') : (isGuide ? icon('ticket', 'icon-md') : icon('user', 'icon-md'));
+>>>>>>> upstream/master
     
     let navItems = [
         { id: 'dashboard', icon: 'home', label: 'Home' },
@@ -136,10 +200,51 @@ function renderMainLayout(content) {
         navItems.push({ id: 'intranet', icon: 'building', label: 'Intranet' });
     }
     
+<<<<<<< HEAD
+    return `<div class="app-container">
+        <button class="sidebar-toggle" onclick="toggleSidebar()">${icon('menu', 'icon-sm')}</button>
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo"><img src="/icons/icon-192.svg" alt="SIGTS logo"></div>
+                <div class="sidebar-title"><span class="sidebar-title-script">SIGTS</span><span>Platform</span></div>
+            </div>
+            <div class="sidebar-profile" onclick="navigateTo('profile')">
+                <div class="sidebar-avatar sidebar-avatar-photo" aria-hidden="true"></div>
+                <div class="sidebar-user-info">
+                    <div class="sidebar-user-name">${escapeHtml(user.name)}</div>
+                    <div class="sidebar-user-role">${escapeHtml(roleLabel)}</div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                ${navItems.map(item => `<div class="nav-item-vertical ${window.currentView === item.id ? 'active' : ''}" onclick="navigateTo('${item.id}')"><div class="nav-icon-vertical">${icon(item.icon, 'icon-md')}</div><div class="nav-label-vertical">${item.label}</div></div>`).join('')}
+            </nav>
+            <div class="sidebar-logout" onclick="Auth.logout()">${icon('logout', 'icon-md')} <span>Logout</span></div>
+        </aside>
+        <main class="main-content" onclick="closeSidebar()">
+            <div class="content-header">
+                <div class="header-left">
+                    <h1>${getPageTitle(window.currentView)}</h1>
+                    <p>${getPageSubtitle(window.currentView)}</p>
+                </div>
+                <div class="header-right">
+                    <span class="header-status-badge">${icon('shield', 'icon-sm')} Secure Session</span>
+                    <button class="icon-btn notification-btn" onclick="renderView('notifications')" aria-label="Notifications">${icon('bell', 'icon-md')}<span class="notification-dot">3</span></button>
+                    <button class="header-profile" onclick="navigateTo('profile')" aria-label="Open profile">
+                        <span class="header-avatar" aria-hidden="true"></span>
+                        <span class="header-profile-copy"><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(roleLabel)}</small></span>
+                        ${icon('chevronDown', 'icon-sm')}
+                    </button>
+                </div>
+            </div>
+            <div class="main-container">${content}</div>
+        </main>
+    </div>`;
+=======
     const isOffline = !navigator.onLine;
     const pending = OfflineSync?.getPendingCount?.() || 0;
     const statusText = isOffline ? `Offline mode • ${pending} pending` : (pending ? `Online • ${pending} pending sync` : 'Online');
     return `<div class="app-container"><button class="sidebar-toggle" onclick="toggleSidebar()">${icon('menu', 'icon-sm')}</button><div class="sidebar"><div class="sidebar-header"><div class="sidebar-brand"><div class="sidebar-logo"><img src="/icons/icon-192.svg" alt="SIGTS logo"></div><div class="sidebar-title">Bwindi SIGTS</div></div></div><div class="sidebar-nav">${navItems.map(item => `<div class="nav-item-vertical ${window.currentView === item.id ? 'active' : ''}" onclick="navigateTo('${item.id}')"><div class="nav-icon-vertical">${icon(item.icon, 'icon-md')}</div><div class="nav-label-vertical">${item.label}</div></div>`).join('')}</div><div class="sidebar-logout" onclick="Auth.logout()">${icon('logout', 'icon-md')} Logout</div></div><div class="main-content" onclick="closeSidebar()"><div class="content-header"><h1>${getPageTitle(window.currentView)}</h1><div class="header-right"><span id="networkStatusBadge" class="net-status ${isOffline ? 'offline' : 'online'}">${statusText}</span><button class="icon-btn notif-btn" onclick="renderView('it_dashboard')">${icon('bell', 'icon-md')}<span id="rareAlertBadge" class="notif-badge hidden">0</span></button><button class="header-profile" onclick="navigateTo('profile')"><div class="header-avatar ${isITManager ? 'role-it' : (isGuide ? 'role-guide' : 'role-tourist')}">${avatarIcon}</div><div class="header-user-info"><div class="header-user-name">${escapeHtml(user.name)}</div><div class="header-user-role">${escapeHtml(roleLabel)}</div></div></button></div></div><div class="main-container">${content}</div></div></div>`;
+>>>>>>> upstream/master
 }
 
 function getAnimalIconName(animalName = '') {
@@ -157,6 +262,78 @@ async function renderDashboardContent() {
     const animals = await Content.getAnimals();
     const recommendations = await AI.getRecommendations(3);
     const seasonal = await AI.getSeasonalRecommendations();
+<<<<<<< HEAD
+    const quickCards = [
+        { id: 'animals', iconName: 'paw', label: 'Animals', count: `${animals.length || 3} species`, className: 'animals' },
+        { id: 'map', iconName: 'map', label: 'Map', className: 'map' },
+        { id: 'culture', iconName: 'book', label: 'Culture', className: 'culture' },
+        { id: 'info', iconName: 'info', label: 'Info', className: 'info' }
+    ];
+    const seasonalTitle = seasonal.season === 'dry' ? `${icon('sun', 'icon-sm')} Dry Season` : `${icon('rain', 'icon-sm')} Wet Season`;
+    const recommendationCategories = ['Wildlife', 'Nature', 'Culture'];
+    const seasonalDetails = {
+        'Gorilla Trekking': 'Clearer trails and better long-distance views.',
+        'Bird Watching': 'Active forest birds and strong photography light.',
+        'Cultural Experiences': 'Explore rich traditions and local heritage during the lush season.',
+        'Forest Walks': 'Fresh vegetation, misty trails, and vivid rainforest color.'
+    };
+
+    return `<div class="dashboard-screen">
+        <div class="quick-grid">
+            ${quickCards.map(card => `<button class="quick-card feature-card quick-photo ${card.className}" onclick="navigateTo('${card.id}')">
+                <span class="quick-icon">${icon(card.iconName, 'icon-xl')}</span>
+                <span class="quick-label">${card.label}</span>
+                ${card.count ? `<span class="quick-count">${card.count}</span>` : ''}
+            </button>`).join('')}
+        </div>
+        <div class="dashboard-main-grid">
+            <div class="dashboard-left-column">
+                <section class="section-card recommendations-card card">
+                    <div class="section-header"><h3>${icon('sparkles', 'icon-sm')} AI Recommendations</h3></div>
+                    <div id="recList">
+                        ${recommendations.map((r, index) => `<button class="rec-card recommendation-row" onclick="navigateTo('${index === 2 ? 'culture' : 'animals'}')">
+                            <span class="rec-avatar" aria-hidden="true"></span>
+                            <span class="rec-info">
+                                <span class="rec-title">${escapeHtml(r.name)}</span>
+                                <span class="rec-category-badge">${recommendationCategories[index] || 'Insight'}</span>
+                                <span class="rec-reason">${escapeHtml(r.reason)}</span>
+                            </span>
+                            <span class="rec-arrow">${icon('arrowRight', 'icon-sm')}</span>
+                        </button>`).join('')}
+                    </div>
+                </section>
+
+                <section class="section-card seasonal-card seasonal-insight-card card">
+                    <div class="seasonal-copy">
+                        <h3>${icon('leaf', 'icon-sm')} Seasonal Insight</h3>
+                        <p class="seasonal-phase">${seasonalTitle}</p>
+                        <ul class="seasonal-list">
+                            ${seasonal.recommendations.map(a => `<li><strong>${escapeHtml(a)}</strong><span>${escapeHtml(seasonalDetails[a] || 'Recommended for current park conditions.')}</span></li>`).join('')}
+                        </ul>
+                        <button class="seasonal-action" onclick="navigateTo('culture')">View Suggestions</button>
+                    </div>
+                    <div class="seasonal-thumb" aria-hidden="true"></div>
+                </section>
+            </div>
+
+            <aside class="dashboard-right-column">
+                <aside class="dashboard-quote-card card"><blockquote>"The best view comes after the hardest climb."</blockquote></aside>
+                <section class="section-card quick-actions-card card">
+                    <div class="section-header"><h3>${icon('target', 'icon-sm')} Quick Actions</h3></div>
+                    <div class="quick-actions-list">
+                        <button class="small-btn btn-secondary" onclick="navigateTo('map')">Open Map</button>
+                        <button class="small-btn btn-secondary" onclick="navigateTo('sightings')">Log Sighting</button>
+                        <button class="small-btn btn-secondary" onclick="navigateTo('info')">Safety Info</button>
+                    </div>
+                </section>
+                <section class="section-card safety-notice-card card">
+                    <div class="section-header"><h3>${icon('shield', 'icon-sm')} Safety Notice</h3></div>
+                    <div class="safety-copy">Maintain guide instructions, wildlife distance rules, and route check-ins throughout active sessions.</div>
+                </section>
+            </aside>
+        </div>
+    </div>`;
+=======
     return renderDashboardShell({
         primaryTitle: 'AI Recommendations',
         primaryIcon: 'target',
@@ -194,6 +371,7 @@ function renderDashboardShell({
             : `<div class="rec-avatar ${item.avatarClass || getRecommendationPhotoClass(item, index)}" aria-hidden="true">${item.iconName ? `<span class="rec-symbol">${icon(item.iconName, 'icon-md')}</span>` : ''}</div>`;
         return `<div class="${recClass}">${iconOnlyAvatar}<div class="rec-info"><div class="rec-title">${escapeHtml(item.title)}</div>${item.match ? `<div class="rec-match">${escapeHtml(item.match)}</div>` : ''}<div class="rec-reason">${escapeHtml(item.reason)}</div></div><button class="rec-go" aria-label="Open">${icon(item.goIcon || 'map', 'icon-sm')}</button></div>`;
     }).join('') || '<div class="empty-state">No items available.</div>'}</div></div><div class="dashboard-quote-card"><blockquote>${escapeHtml(quote)}</blockquote></div></div><div class="section-card seasonal-card"><div class="section-header"><h3>${icon('leaf', 'icon-sm')} Seasonal: ${seasonalTitle}</h3></div><div class="seasonal-list">${seasonalItems.map((a) => `<div class="seasonal-item">• ${escapeHtml(a)}</div>`).join('') || '<div class="seasonal-item">• No seasonal updates available</div>'}</div><div class="seasonal-bottom"><div class="seasonal-image-strip photo-leaf" aria-hidden="true"></div><button class="seasonal-action-btn">${escapeHtml(seasonalActionLabel || 'View Suggestions')}</button></div></div>`;
+>>>>>>> upstream/master
 }
 
 async function renderAnimalsContent() {
@@ -677,6 +855,9 @@ async function renderCultureContent() {
 
 async function renderSightingsContent() {
     const sightings = await API.getRecentSightings(10);
+<<<<<<< HEAD
+    return `<div class="section-card"><div class="section-header"><h3>${icon('camera', 'icon-sm')} Recent Sightings</h3><button class="add-btn btn-primary" onclick="addSighting()">${icon('plus', 'icon-sm')} Report</button></div><div class="sighting-list">${sightings.length ? sightings.map(sighting => `
+=======
     const commentsBySighting = {};
     await Promise.all((sightings || []).map(async (sighting) => {
         const sid = sighting.sighting_id;
@@ -684,6 +865,7 @@ async function renderSightingsContent() {
         commentsBySighting[sid] = await API.getSightingComments(sid, 3);
     }));
     return `<div class="section-card"><div class="section-header"><h3>${icon('camera', 'icon-sm')} Recent Sightings</h3><button class="add-btn" onclick="addSighting()">${icon('plus', 'icon-sm')} Report</button></div><div class="sighting-list">${sightings.length ? sightings.map(sighting => `
+>>>>>>> upstream/master
         <div class="sighting-item">
             <div class="sighting-icon">${icon(getAnimalIconName(sighting.animal_name), 'icon-lg')}</div>
             <div class="sighting-main">
@@ -714,7 +896,7 @@ function renderAIChatContent() {
             <div class="rec-card">
                 <div class="rec-info">
                     <div class="rec-title">Assistant</div>
-                    <div class="rec-reason">Ask about wildlife, safety, culture, routes, or weather in Bwindi.</div>
+                    <div class="rec-reason">Ask about wildlife, safety, culture, routes, or local weather insights.</div>
                 </div>
             </div>
         </div>
@@ -728,6 +910,9 @@ function renderAIChatContent() {
 async function renderGuideDashboard() {
     const guideManager = getGuideOpsManager();
     const dashboard = await guideManager.getGuideDashboard();
+<<<<<<< HEAD
+    return `<div class="guide-dashboard"><div class="metrics-grid"><div class="metric-card"><div class="metric-value">${dashboard.stats.totalTours}</div><div class="metric-label">Total Tours</div></div><div class="metric-card"><div class="metric-value">${dashboard.stats.totalGuests}</div><div class="metric-label">Guests Served</div></div><div class="metric-card"><div class="metric-value">${dashboard.stats.averageRating}</div><div class="metric-label">Rating</div></div></div><div class="section-card"><div class="section-header"><h3>${icon('clock', 'icon-sm')} Today's Tours</h3></div>${dashboard.today.map(t => `<div class="tour-item"><div class="tour-name">${t.route_name || 'Gorilla Trek'}</div><div class="tour-time">${new Date(t.scheduled_start).toLocaleTimeString()}</div><button class="small-btn btn-secondary" onclick="startTour('${t.tour_session_id}')">Start Tour</button></div>`).join('') || '<div class="empty-state">No tours today</div>'}</div><div class="shift-controls"><button class="login-btn btn-primary" onclick="clockInOut()">${dashboard.activeShift ? 'Clock Out' : 'Clock In'}</button></div><div id="activeTourPanel" style="display:none"><div id="tourTimerDisplay" class="tour-timer">00:00:00</div><button class="small-btn btn-secondary" onclick="quickSighting()">Log Sighting</button><button class="small-btn btn-danger" onclick="endActiveTour()">End Tour</button></div></div>`;
+=======
     const animals = await Content.getAnimals();
     const guideItems = (dashboard.today || []).slice(0, 3).map((t) => ({
         title: t.route_name || 'Gorilla Trek',
@@ -759,11 +944,16 @@ async function renderGuideDashboard() {
         seasonalActionLabel: dashboard.activeShift ? 'Clock Out' : 'Clock In',
         animalCount: animals.length
     })}<div class="section-card"><div class="section-header"><h3>${icon('clock', 'icon-sm')} Schedule Controls</h3></div><div class="seasonal-list">${(dashboard.today || []).length ? dashboard.today.map((t) => `<div class="seasonal-item"><strong>${escapeHtml(t.route_name || 'Tour Route')}</strong> - ${new Date(t.scheduled_start).toLocaleTimeString()} (${t.confirmed_guests || t.group_size || 0} guests) <button class="small-btn" onclick="startTour('${t.tour_session_id}')">Start</button></div>`).join('') : '<div class="seasonal-item">No tours today.</div>'}</div></div><div class="section-card"><div class="section-header"><h3>${icon('users', 'icon-sm')} Live Participants</h3></div><div class="seasonal-list">${participants.length ? participants.map((p) => `<div class="seasonal-item">${escapeHtml(p.first_name || p.username || 'Tourist')} ${escapeHtml(p.last_name || '')} - ${escapeHtml(p.pickup_location || 'In-session')}</div>`).join('') : '<div class="seasonal-item">No participants assigned yet.</div>'}</div></div><div class="shift-controls"><button class="login-btn" onclick="clockInOut()">${dashboard.activeShift ? 'Clock Out' : 'Clock In'}</button><button class="small-btn" onclick="addTourNotePrompt()">Add Tour Note</button></div><div id="activeTourPanel" style="${guideManager.activeTour ? 'display:block' : 'display:none'}"><div id="tourTimerDisplay" class="tour-timer">00:00:00</div><button onclick="quickSighting()">Log Sighting</button><button onclick="endActiveTour()">End Tour</button></div></div>`;
+>>>>>>> upstream/master
 }
 
 async function renderITManagerDashboard() {
     const metrics = await ITAPI.getSystemMetrics();
     const users = await ITAPI.getUserList();
+<<<<<<< HEAD
+    const schemaStatus = await ITAPI.getSchemaStatus();
+    return `<div class="it-dashboard"><div class="welcome-card"><h2>Welcome back, ${escapeHtml(Auth.getCurrentUser()?.name)}</h2></div><div class="metrics-grid"><div class="metric-card"><div class="metric-value">${metrics.activeUsers}</div><div class="metric-label">Active Users</div></div><div class="metric-card"><div class="metric-value">${metrics.syncQueueSize}</div><div class="metric-label">Pending Sync</div></div><div class="metric-card"><div class="metric-value">${metrics.totalSightings}</div><div class="metric-label">Sightings</div></div><div class="metric-card"><div class="metric-value">${metrics.totalStaff || 0}</div><div class="metric-label">Staff Total</div></div><div class="metric-card"><div class="metric-value">${metrics.guidesOnDuty || 0}</div><div class="metric-label">Guides Active</div></div><div class="metric-card"><div class="metric-value">${metrics.inventoryItems || 0}</div><div class="metric-label">Inventory Items</div></div></div><div class="section-card"><div class="section-header"><h3>${icon('users', 'icon-sm')} Users</h3></div>${users.map(u => `<div class="user-item">${u.full_name} (${u.user_type}) - ${u.department || ''}</div>`).join('')}</div><div class="section-card"><div class="section-header"><h3>${icon('database', 'icon-sm')} Database Schema (Extended)</h3></div><div class="schema-items">${Object.entries(schemaStatus).slice(0,12).map(([name, info]) => `<div class="schema-item">${icon('chart', 'icon-sm')} ${name}: ${info.count} records</div>`).join('')}</div></div><div class="admin-actions"><button class="admin-action-btn btn-primary" onclick="handleMFASetup()">${icon('shield', 'icon-sm')} Configure MFA</button><button class="admin-action-btn btn-secondary" onclick="clearAllCache()">Clear Cache</button><button class="admin-action-btn btn-secondary" onclick="exportData()">Export Data</button><button class="admin-action-btn danger btn-danger" onclick="resetApp()">Reset App</button></div></div>`;
+=======
     const interactive = await ITAPI.getInteractiveAnalytics();
     const liveOps = await ITAPI.getLiveOperations();
     const feedbackInsights = await ITAPI.getFeedbackInsights(30);
@@ -825,6 +1015,7 @@ async function renderITManagerDashboard() {
         seasonalActionLabel: 'View Suggestions',
         animalCount: animals.length
     })}<div class="section-card"><div class="section-header"><h3>${icon('users', 'icon-sm')} Users</h3></div>${users.map(u => `<div class="user-item">${u.full_name} (${u.user_type}) - ${u.department || ''}</div>`).join('')}</div><div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon('chart', 'icon-sm')} Visitor Flow (7 days)</h3></div><div class="analytics-list">${flowBars}</div></div><div class="section-card"><div class="section-header"><h3>${icon('target', 'icon-sm')} Popular Content</h3></div><div class="analytics-list">${popularRows}</div></div></div><div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon('users', 'icon-sm')} User Type Demographics</h3></div><div class="analytics-list">${demographicRows}</div></div><div class="section-card"><div class="section-header"><h3>${icon('map', 'icon-sm')} Congestion Guidance</h3></div><div class="seasonal-list">${(interactive.congestionRecommendations || []).map((r) => `<div class="seasonal-item">• ${escapeHtml(r)}</div>`).join('') || '<div class="seasonal-item">• No congestion recommendations available</div>'}</div></div></div><div class="dashboard-feature-grid"><div class="section-card"><div class="section-header"><h3>${icon('building', 'icon-sm')} Intranet Connectivity</h3></div><div class="analytics-list"><div class="analytics-row"><span>Intranet</span><div class="analytics-bar"><div style="width:${liveOps.intranetStatus?.isIntranet ? 100 : 35}%;"></div></div><strong>${liveOps.intranetStatus?.isIntranet ? 'Connected' : 'External'}</strong></div><div class="analytics-row"><span>Device IP</span><span></span><strong>${escapeHtml(liveOps.intranetStatus?.ip || 'Unknown')}</strong></div><div class="analytics-row"><span>Pending Sync</span><span></span><strong>${liveOps.syncStatus?.pending || liveOps.syncStatus?.pending_items || 0}</strong></div></div></div><div class="section-card"><div class="section-header"><h3>${icon('user', 'icon-sm')} Live Peers / Guests</h3></div><div class="seasonal-list">${(liveOps.peers || []).length ? liveOps.peers.slice(0, 8).map((p) => `<div class="seasonal-item">• ${escapeHtml(p.name || 'Peer')} (${escapeHtml(p.type || 'user')})${p.location ? ` @ ${Number(p.location.lat).toFixed(4)}, ${Number(p.location.lng).toFixed(4)}` : ''}</div>`).join('') : '<div class="seasonal-item">• No live peers detected in last 5 minutes.</div>'}</div></div></div><div class="section-card"><div class="section-header"><h3>${icon('note', 'icon-sm')} Feedback & Improvements (30 days)</h3></div><div class="analytics-list"><div class="analytics-row"><span>Total Feedback</span><span></span><strong>${feedbackInsights.summary?.total_feedback || 0}</strong></div><div class="analytics-row"><span>Average Rating</span><span></span><strong>${feedbackInsights.summary?.avg_rating || 0}</strong></div><div class="analytics-row"><span>Bug Reports</span><span></span><strong>${feedbackInsights.summary?.bug_reports || 0}</strong></div><div class="analytics-row"><span>Feature Requests</span><span></span><strong>${feedbackInsights.summary?.feature_requests || 0}</strong></div><div class="analytics-row"><span>Responded</span><span></span><strong>${feedbackInsights.summary?.responded_count || 0}</strong></div></div><div class="seasonal-list">${(feedbackInsights.recent || []).slice(0, 5).map((item) => `<div class="seasonal-item">• ${escapeHtml(item.category)} - ${escapeHtml(item.comment || 'No comment')} ${item.response_text ? '<span style="color:#2E7D32;">(Responded)</span>' : `<button class=\"small-btn\" onclick=\"respondToFeedbackPrompt('${item.feedback_id}')\">Respond</button>`}</div>`).join('') || '<div class="seasonal-item">• No recent feedback</div>'}</div></div>${rareAlertsHtml}<div class="admin-actions"><button class="admin-action-btn" onclick="handleMFASetup()">${icon('shield', 'icon-sm')} Configure MFA</button><button class="admin-action-btn" onclick="clearAllCache()">Clear Cache</button><button class="admin-action-btn" onclick="exportData()">Export Data</button><button class="admin-action-btn danger" onclick="resetApp()">Reset App</button></div></div>`;
+>>>>>>> upstream/master
 }
 
 // =====================================================
@@ -860,27 +1051,27 @@ async function renderIntranetDashboard() {
             animalCount: animals.length
         })}
         <div class="section-card">
-            <div class="section-header"><h3>${icon('megaphone', 'icon-sm')} Internal Announcements</h3><button class="add-btn" onclick="showAddAnnouncementModal()">${icon('plus', 'icon-sm')} Post</button></div>
-            <div id="announcementsList">${announcements.map(a => `<div class="announcement-item ${a.priority}"><div class="announcement-title">${escapeHtml(a.title)}</div><div class="announcement-meta">${new Date(a.date).toLocaleDateString()} by ${a.author}</div><div class="announcement-content">${escapeHtml(a.content)}</div><button class="small-btn" onclick="deleteAnnouncement(${a.id})">Delete</button></div>`).join('') || '<div class="empty-state">No announcements</div>'}</div>
+            <div class="section-header"><h3>${icon('megaphone', 'icon-sm')} Internal Announcements</h3><button class="add-btn btn-primary" onclick="showAddAnnouncementModal()">${icon('plus', 'icon-sm')} Post</button></div>
+            <div id="announcementsList">${announcements.map(a => `<div class="announcement-item ${a.priority}"><div class="announcement-title">${escapeHtml(a.title)}</div><div class="announcement-meta">${new Date(a.date).toLocaleDateString()} by ${a.author}</div><div class="announcement-content">${escapeHtml(a.content)}</div><button class="small-btn btn-danger" onclick="deleteAnnouncement(${a.id})">Delete</button></div>`).join('') || '<div class="empty-state">No announcements</div>'}</div>
         </div>
         
         <div class="section-card">
-            <div class="section-header"><h3>${icon('box', 'icon-sm')} Inventory Management</h3><button class="add-btn" onclick="showAddInventoryModal()">${icon('plus', 'icon-sm')} Add Item</button></div>
-            <div class="inventory-list">${inventory.map(i => `<div class="inventory-item"><span><strong>${escapeHtml(i.name)}</strong> - ${i.quantity} units (${i.category})</span><button class="small-btn" onclick="updateInventoryQuantity(${i.id})">Update</button></div>`).join('') || '<div class="empty-state">No inventory items</div>'}</div>
+            <div class="section-header"><h3>${icon('box', 'icon-sm')} Inventory Management</h3><button class="add-btn btn-primary" onclick="showAddInventoryModal()">${icon('plus', 'icon-sm')} Add Item</button></div>
+            <div class="inventory-list">${inventory.map(i => `<div class="inventory-item"><span><strong>${escapeHtml(i.name)}</strong> - ${i.quantity} units (${i.category})</span><button class="small-btn btn-secondary" onclick="updateInventoryQuantity(${i.id})">Update</button></div>`).join('') || '<div class="empty-state">No inventory items</div>'}</div>
         </div>
         
         <div class="section-card">
-            <div class="section-header"><h3>${icon('users', 'icon-sm')} Employee Directory</h3><button class="add-btn" onclick="showAddEmployeeModal()">${icon('plus', 'icon-sm')} Add Employee</button></div>
-            <div class="employee-list">${employees.map(e => `<div class="employee-item"><div><strong>${escapeHtml(e.name)}</strong> - ${e.role}<br><small>${e.department} | Status: ${e.status}</small></div><button class="small-btn" onclick="toggleEmployeeStatus(${e.id}, '${e.status}')">${e.status === 'active' ? 'Deactivate' : 'Activate'}</button></div>`).join('') || '<div class="empty-state">No employees</div>'}</div>
+            <div class="section-header"><h3>${icon('users', 'icon-sm')} Employee Directory</h3><button class="add-btn btn-primary" onclick="showAddEmployeeModal()">${icon('plus', 'icon-sm')} Add Employee</button></div>
+            <div class="employee-list">${employees.map(e => `<div class="employee-item"><div><strong>${escapeHtml(e.name)}</strong> - ${e.role}<br><small>${e.department} | Status: ${e.status}</small></div><button class="small-btn ${e.status === 'active' ? 'btn-danger' : 'btn-secondary'}" onclick="toggleEmployeeStatus(${e.id}, '${e.status}')">${e.status === 'active' ? 'Deactivate' : 'Activate'}</button></div>`).join('') || '<div class="empty-state">No employees</div>'}</div>
         </div>
     </div>`;
 }
 
 // Modal handlers for Intranet
 window.showAddAnnouncementModal = async function() {
-    const title = prompt('Announcement Title:');
-    const content = prompt('Announcement Content:');
-    const priority = prompt('Priority (high/medium/low):', 'medium');
+    const title = await showPromptDialog('Announcement Title');
+    const content = await showPromptDialog('Announcement Content');
+    const priority = await showPromptDialog('Priority (high/medium/low)', 'medium');
     if (title && content) {
         await Intranet.addAnnouncement(title, content, priority);
         renderView('intranet');
@@ -888,34 +1079,42 @@ window.showAddAnnouncementModal = async function() {
 };
 
 window.deleteAnnouncement = async function(id) {
-    if (confirm('Delete this announcement?')) {
+    if (await showConfirmDialog('Delete this announcement?')) {
         await Intranet.deleteAnnouncement(id);
         renderView('intranet');
     }
 };
 
 window.showAddInventoryModal = async function() {
-    const name = prompt('Item Name:');
-    const quantity = prompt('Quantity:');
-    const category = prompt('Category (Equipment/Medical/Communication):');
-    if (name && quantity) {
-        await Intranet.addInventoryItem(name, parseInt(quantity), category);
+    const name = await showPromptDialog('Item Name');
+    const quantity = await showPromptDialog('Quantity');
+    const category = await showPromptDialog('Category (Equipment/Medical/Communication)');
+    const parsedQuantity = Number.parseInt(quantity, 10);
+    if (name && Number.isFinite(parsedQuantity)) {
+        await Intranet.addInventoryItem(name, parsedQuantity, category);
         renderView('intranet');
+        return;
     }
+    showToast('Enter a valid quantity.', 'warning');
 };
 
 window.updateInventoryQuantity = async function(id) {
-    const newQty = prompt('Enter new quantity:');
+    const newQty = await showPromptDialog('Enter new quantity');
     if (newQty !== null) {
-        await Intranet.updateInventoryItem(id, { quantity: parseInt(newQty) });
+        const parsedQuantity = Number.parseInt(newQty, 10);
+        if (!Number.isFinite(parsedQuantity)) {
+            showToast('Quantity must be a number.', 'warning');
+            return;
+        }
+        await Intranet.updateInventoryItem(id, { quantity: parsedQuantity });
         renderView('intranet');
     }
 };
 
 window.showAddEmployeeModal = async function() {
-    const name = prompt('Employee Name:');
-    const role = prompt('Role (e.g., Senior Guide, Ranger):');
-    const department = prompt('Department:');
+    const name = await showPromptDialog('Employee Name');
+    const role = await showPromptDialog('Role (e.g., Senior Guide, Ranger)');
+    const department = await showPromptDialog('Department');
     if (name && role) {
         await Intranet.addEmployee({ name, role, department });
         renderView('intranet');
@@ -1045,79 +1244,261 @@ async function loadRecentFeedback() {
 function showLoading() {
     const app = document.getElementById('app');
     if (app) {
-        app.innerHTML = `<div class="loading-container"><div class="spinner"></div><p>Loading Bwindi SIGTS...</p></div>`;
+        app.innerHTML = `<div class="loading-container"><div class="spinner"></div><p>Loading SIGTS Platform...</p></div>`;
     }
 }
 
-function renderLoginScreen() {
-    return `<div class="login-container"><div class="login-card"><div class="login-logo"><img src="/icons/icon-192.svg" alt="SIGTS logo"></div><h1 class="login-title">Welcome to Bwindi</h1><p class="login-subtitle">Smart Information Tour Guide System</p><input type="text" id="loginUsername" class="login-input" placeholder="Username"><input type="password" id="loginPassword" class="login-input" placeholder="Password"><button onclick="handleLogin()" class="login-btn">Login</button><button onclick="renderView('register')" class="register-btn">Create Account</button><div class="demo-credentials"><strong>Demo:</strong> "admin" / "password" or "tourist" / "password"</div></div></div>`;
+function setAuthFeedback(message, type = 'error') {
+    const node = document.getElementById('authFeedback');
+    if (!node) return;
+    if (!message) {
+        node.textContent = '';
+        node.className = 'auth-feedback';
+        node.hidden = true;
+        return;
+    }
+    node.textContent = String(message);
+    node.className = `auth-feedback ${type === 'success' ? 'success' : 'error'}`;
+    node.hidden = false;
 }
 
-function renderRegisterScreen() {
-    return `<div class="login-container"><div class="login-card"><div class="login-logo">${icon('note', 'icon-xl')}</div><h1 class="login-title">Create Account</h1><input type="text" id="regFullName" placeholder="Full Name"><input type="email" id="regEmail" placeholder="Email"><input type="text" id="regUsername" placeholder="Username"><input type="password" id="regPassword" placeholder="Password"><input type="password" id="regConfirmPassword" placeholder="Confirm Password"><select id="regUserType"><option value="tourist">Tourist</option><option value="guide">Tour Guide</option><option value="it_manager">IT Manager</option></select><button onclick="handleRegistration()" class="login-btn">Register</button><button onclick="renderView('login')" class="register-btn">Back</button></div></div>`;
+function ensureFeedbackRoot() {
+    let root = document.getElementById('ui-feedback-root');
+    if (root) return root;
+    root = document.createElement('div');
+    root.id = 'ui-feedback-root';
+    root.className = 'ui-feedback-root';
+    document.body.appendChild(root);
+    return root;
 }
+
+function showToast(message, type = 'info') {
+    const root = ensureFeedbackRoot();
+    const toast = document.createElement('div');
+    toast.className = `ui-toast ui-toast-${type}`;
+    toast.textContent = String(message || '');
+    root.appendChild(toast);
+    window.setTimeout(() => toast.classList.add('visible'), 10);
+    window.setTimeout(() => {
+        toast.classList.remove('visible');
+        window.setTimeout(() => toast.remove(), 220);
+    }, 2600);
+}
+
+function showPromptDialog(message, defaultValue = '') {
+    return new Promise((resolve) => {
+        const root = ensureFeedbackRoot();
+        const overlay = document.createElement('div');
+        overlay.className = 'ui-modal-overlay';
+        overlay.innerHTML = `
+            <div class="ui-modal" role="dialog" aria-modal="true">
+                <div class="ui-modal-title">${escapeHtml(message || 'Input required')}</div>
+                <input class="ui-modal-input" type="text" value="${escapeHtml(defaultValue || '')}" />
+                <div class="ui-modal-actions">
+                    <button type="button" class="ui-btn ui-btn-secondary">Cancel</button>
+                    <button type="button" class="ui-btn ui-btn-primary">OK</button>
+                </div>
+            </div>
+        `;
+
+        const input = overlay.querySelector('.ui-modal-input');
+        const [cancelBtn, okBtn] = overlay.querySelectorAll('button');
+
+        const cleanup = (value) => {
+            overlay.remove();
+            resolve(value);
+        };
+
+        cancelBtn.addEventListener('click', () => cleanup(null));
+        okBtn.addEventListener('click', () => cleanup(input?.value ?? ''));
+        overlay.addEventListener('click', (event) => {
+            if (event.target === overlay) cleanup(null);
+        });
+        input?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') cleanup(input.value);
+            if (event.key === 'Escape') cleanup(null);
+        });
+
+        root.appendChild(overlay);
+        input?.focus();
+        input?.select();
+    });
+}
+
+function showConfirmDialog(message) {
+    return new Promise((resolve) => {
+        const root = ensureFeedbackRoot();
+        const overlay = document.createElement('div');
+        overlay.className = 'ui-modal-overlay';
+        overlay.innerHTML = `
+            <div class="ui-modal" role="dialog" aria-modal="true">
+                <div class="ui-modal-title">${escapeHtml(message || 'Please confirm')}</div>
+                <div class="ui-modal-actions">
+                    <button type="button" class="ui-btn ui-btn-secondary">Cancel</button>
+                    <button type="button" class="ui-btn ui-btn-danger">Confirm</button>
+                </div>
+            </div>
+        `;
+
+        const [cancelBtn, confirmBtn] = overlay.querySelectorAll('button');
+        const cleanup = (accepted) => {
+            overlay.remove();
+            resolve(accepted);
+        };
+
+        cancelBtn.addEventListener('click', () => cleanup(false));
+        confirmBtn.addEventListener('click', () => cleanup(true));
+        overlay.addEventListener('click', (event) => {
+            if (event.target === overlay) cleanup(false);
+        });
+
+        root.appendChild(overlay);
+        confirmBtn?.focus();
+    });
+}
+
+window.showToast = showToast;
+window.showPromptDialog = showPromptDialog;
+window.showConfirmDialog = showConfirmDialog;
 
 async function handleRegistration() {
+    setAuthFeedback('');
     const result = await Auth.register({
         fullName: document.getElementById('regFullName')?.value,
         email: document.getElementById('regEmail')?.value,
         username: document.getElementById('regUsername')?.value,
         password: document.getElementById('regPassword')?.value,
         confirmPassword: document.getElementById('regConfirmPassword')?.value,
-        userType: document.getElementById('regUserType')?.value
+        userType: 'tourist'
     });
-    alert(result.message || (result.success ? 'Success! Please login.' : result.error));
+    const message = result.message || (result.success ? 'Success! Please login.' : result.error);
+    showToast(message, result.success ? 'success' : 'danger');
+    setAuthFeedback(message, result.success ? 'success' : 'error');
     if (result.success) renderView('login');
-    else renderView('register');
 }
 
 async function handleLogin() {
+    setAuthFeedback('');
     const result = await Auth.login(
         document.getElementById('loginUsername')?.value,
-        document.getElementById('loginPassword')?.value
+        document.getElementById('loginPassword')?.value,
+        document.getElementById('rememberMe')?.checked || false
     );
-    if (result.success) renderView('dashboard');
-    else alert('Login failed: ' + result.error);
+    if (result.success) {
+        renderView('dashboard');
+        return;
+    }
+    const message = 'Login failed: ' + result.error;
+    showToast(message, 'danger');
+    setAuthFeedback(message, 'error');
+}
+
+function quickLoginAs(role) {
+    const presets = {
+        tourist: {
+            user_id: 'demo-tourist',
+            name: 'Demo Tourist',
+            email: 'tourist@demo.local',
+            username: 'tourist',
+            role: 'tourist',
+            userType: 'tourist',
+            department: 'Visitor',
+            targetView: 'dashboard'
+        },
+        guide: {
+            user_id: 'demo-guide',
+            name: 'Demo Guide',
+            email: 'guide@demo.local',
+            username: 'guide',
+            role: 'guide',
+            userType: 'guide',
+            department: 'Tour Operations',
+            targetView: 'guide_dashboard'
+        },
+        it_manager: {
+            user_id: 'demo-admin',
+            name: 'IT Manager',
+            email: 'admin@demo.local',
+            username: 'admin',
+            role: 'it_manager',
+            userType: 'it_manager',
+            department: 'IT',
+            targetView: 'it_dashboard'
+        }
+    };
+
+    const selected = presets[role];
+    if (!selected) return;
+    const token = `demo.${role}.token`;
+    const { targetView, ...user } = selected;
+
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+
+    Auth.token = token;
+    Auth.user = user;
+    AppState.currentUser = user;
+    AppState.authToken = token;
+    API.setToken(token);
+
+    showToast(`Quick access: ${formatRoleName(role)}`, 'success');
+    navigateTo(targetView);
+}
+
+function togglePasswordVisibility(inputId, button) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const shouldShow = input.type === 'password';
+    input.type = shouldShow ? 'text' : 'password';
+    button?.setAttribute('aria-label', shouldShow ? 'Hide password' : 'Show password');
+    button?.classList.toggle('active', shouldShow);
 }
 
 async function handleForgotPassword() {
-    const email = prompt('Enter your account email to receive a password reset link');
+    setAuthFeedback('');
+    const email = await showPromptDialog('Enter your account email to receive a password reset link');
     if (!email) return;
 
     const result = await Auth.requestPasswordReset(email);
     if (result.success) {
-        alert(result.message || 'If the email exists, a reset link has been sent.');
+        const message = result.message || 'If the email exists, a reset link has been sent.';
+        showToast(message, 'success');
+        setAuthFeedback(message, 'success');
         return;
     }
 
-    alert('Password reset request failed: ' + (result.error || 'Unknown error'));
+    const message = 'Password reset request failed: ' + (result.error || 'Unknown error');
+    showToast(message, 'danger');
+    setAuthFeedback(message, 'error');
 }
 
 async function handleMFASetup() {
     const setup = await Auth.initializeMFA();
     if (!setup.success) {
-        alert('MFA setup failed: ' + (setup.error || 'Unknown error'));
+        showToast('MFA setup failed: ' + (setup.error || 'Unknown error'), 'danger');
         return;
     }
 
     const preview = setup.secret ? `Secret: ${setup.secret}` : 'Secret generated';
-    alert(`MFA setup initialized.\nAdd this to your authenticator app.\n\n${preview}`);
+    showToast(`MFA setup initialized. ${preview}`, 'info');
 
-    const code = prompt('Enter the 6-digit code from your authenticator app to enable MFA');
+    const code = await showPromptDialog('Enter the 6-digit code from your authenticator app to enable MFA');
     if (!code) return;
 
     const verify = await Auth.verifyMFASetup(code.trim());
     if (!verify.success) {
-        alert('MFA verification failed: ' + (verify.error || 'Invalid code'));
+        showToast('MFA verification failed: ' + (verify.error || 'Invalid code'), 'danger');
         return;
     }
 
-    alert(verify.message || 'MFA enabled successfully.');
+    showToast(verify.message || 'MFA enabled successfully.', 'success');
 }
 
 async function downloadOfflineContent() {
     await Content.downloadOfflineContent();
-    alert('Downloaded!');
+    showToast('Downloaded!', 'success');
 }
 
 function clearAllCache() {
@@ -1125,6 +1506,10 @@ function clearAllCache() {
     location.reload();
 }
 
+<<<<<<< HEAD
+function exportData() {
+    showToast('Data exported (demo)', 'info');
+=======
 async function exportData() {
     const [animals, locations, sightings, feedback] = await Promise.all([
         API.getAnimals(),
@@ -1145,15 +1530,20 @@ async function exportData() {
     a.click();
     URL.revokeObjectURL(url);
     alert('Data exported successfully.');
+>>>>>>> upstream/master
 }
 
-function resetApp() {
-    if (confirm('Reset all data?')) {
+async function resetApp() {
+    if (await showConfirmDialog('Reset all data?')) {
         localStorage.clear();
         location.reload();
     }
 }
 
+<<<<<<< HEAD
+function addSighting() {
+    showToast('Report sighting feature coming soon', 'info');
+=======
 async function addSighting() {
     const [animals, locations] = await Promise.all([API.getAnimals(), API.getLocations()]);
     if (!animals.length || !locations.length) {
@@ -1193,19 +1583,31 @@ async function addSighting() {
     } else {
         alert('Failed to report sighting.');
     }
+>>>>>>> upstream/master
 }
 
 async function startTour(tourId) {
     const m = getGuideOpsManager();
     await m.startTour(tourId);
     document.getElementById('activeTourPanel').style.display = 'block';
-    alert('Tour started!');
+    showToast('Tour started!', 'success');
 }
 
 async function endActiveTour() {
     const m = getGuideOpsManager();
     const result = await m.endTour(m.activeTour?.tour_session_id);
     document.getElementById('activeTourPanel').style.display = 'none';
+<<<<<<< HEAD
+    showToast('Tour ended', 'info');
+}
+
+async function quickSighting() {
+    const animal = await showPromptDialog('Animal seen?');
+    if (animal) {
+        const m = new TourGuideManager();
+        await m.quickSighting(animal, 1);
+        showToast('Sighting recorded!', 'success');
+=======
     alert('Tour ended');
     const askFeedback = confirm('Would you like to submit completion feedback now?');
     if (askFeedback) {
@@ -1223,6 +1625,7 @@ async function quickSighting() {
     if (!animal || !nearest) {
         alert('Missing seeded animal/location data.');
         return;
+>>>>>>> upstream/master
     }
     const manager = getGuideOpsManager();
     const result = await API.reportSighting({
@@ -1263,6 +1666,244 @@ async function clockInOut() {
     renderView('guide_dashboard');
 }
 
+<<<<<<< HEAD
+function renderAuthPortal(activeTab = 'login') {
+    const isLogin = activeTab === 'login';
+    const heading = isLogin ? 'Welcome Back' : 'Create Account';
+    const subheading = isLogin ? 'Access your SIGTS dashboard' : 'Register for secure park access';
+    const trustCopy = isLogin
+        ? 'Secure access for tourists, guides, park officials, and IT managers.'
+        : 'Your information is protected and reviewed according to park access rules.';
+
+    return `<div class="auth-portal ${isLogin ? 'auth-mode-login' : 'auth-mode-register'}">
+        <aside class="auth-portal-side">
+            <div class="auth-side-brand">
+                <div class="auth-side-logo">${icon('map', 'icon-lg')}</div>
+                <div>
+                    <div class="auth-side-title">Bwindi SIGTS</div>
+                    <div class="auth-side-subtitle">Smart Information Guide Tour System</div>
+                </div>
+            </div>
+
+            <div class="auth-side-message">
+                <span class="auth-side-kicker">Welcome</span>
+                <h1>Smart Park Access & Information Portal</h1>
+                <p>Manage wildlife insights, guide access, tourist profiles, sightings, and secure park information from one trusted platform.</p>
+                <p class="auth-side-roles">Tourists • Guides • Officials • IT Managers</p>
+            </div>
+
+            <div class="auth-side-stats" aria-label="System access highlights">
+                <div class="auth-side-stat">${icon('paw', 'icon-sm')} Wildlife Records</div>
+                <div class="auth-side-stat">${icon('ticket', 'icon-sm')} Guide Access</div>
+                <div class="auth-side-stat">${icon('megaphone', 'icon-sm')} Park Notices</div>
+                <div class="auth-side-stat">${icon('shield', 'icon-sm')} Secure Roles</div>
+            </div>
+
+            <div class="auth-side-footer">
+                ${icon('shield', 'icon-sm')}
+                <span>Secure access for tourists, guides, and IT managers.</span>
+            </div>
+        </aside>
+
+        <main class="auth-portal-main">
+            <section class="auth-card">
+                <div class="auth-tabs" role="tablist">
+                    <button
+                        type="button"
+                        class="auth-tab ${isLogin ? 'active' : ''}"
+                        onclick="renderView('login')">
+                        Log In
+                    </button>
+
+                    <button
+                        type="button"
+                        class="auth-tab ${!isLogin ? 'active' : ''}"
+                        onclick="renderView('register')">
+                        Create Account
+                    </button>
+                </div>
+
+                <div class="auth-form-head">
+                    <span class="auth-kicker">${isLogin ? 'Secure Access Portal' : 'Role Enrollment'}</span>
+                    <div class="auth-role-badge">${icon('shield', 'icon-sm')} <span>Role-based login enabled</span></div>
+                    <h2>${heading}</h2>
+                    <p>${subheading}</p>
+                </div>
+
+                ${isLogin ? renderLoginFormOnly() : renderRegisterFormOnly()}
+                <div class="auth-trust-panel">${trustCopy}</div>
+            </section>
+        </main>
+    </div>`;
+}
+
+function renderLoginFormOnly() {
+    return `<form class="auth-form" onsubmit="event.preventDefault(); handleLogin();">
+        <label class="auth-field">
+            <span class="auth-field-label">Email or Username</span>
+            <span class="auth-input-shell">
+                ${icon('mail', 'icon-sm')}
+                <input 
+                    type="text" 
+                    id="loginUsername" 
+                    class="auth-input" 
+                    placeholder="Enter your email or username"
+                    autocomplete="username">
+            </span>
+        </label>
+
+        <label class="auth-field">
+            <span class="auth-field-label">Password</span>
+            <span class="auth-input-shell">
+                ${icon('lock', 'icon-sm')}
+                <input 
+                    type="password" 
+                    id="loginPassword" 
+                    class="auth-input" 
+                    placeholder="Enter your password"
+                    autocomplete="current-password">
+
+                <button 
+                    type="button" 
+                    class="auth-ghost-icon" 
+                    onclick="togglePasswordVisibility('loginPassword', this)" 
+                    aria-label="Show password">
+                    ${icon('eye', 'icon-sm')}
+                </button>
+            </span>
+        </label>
+
+        <div class="auth-options-row">
+            <label class="auth-check">
+                <input type="checkbox" id="rememberMe" checked>
+                <span class="auth-check-box">${icon('check', 'icon-sm')}</span>
+                <span>Remember me</span>
+            </label>
+
+            <button type="button" class="auth-link-btn" onclick="handleForgotPassword()">
+                Forgot password?
+            </button>
+        </div>
+
+        <button type="submit" class="auth-primary-btn">
+            ${icon('leaf', 'icon-sm')} LOGIN TO DASHBOARD
+        </button>
+
+        <div class="auth-divider-lite"><span></span><em>OR</em><span></span></div>
+        <button type="button" class="auth-social-btn" onclick="showToast('Google sign-in will be connected in production.', 'info')">
+            ${icon('user', 'icon-sm')} Continue with Google
+        </button>
+        <p class="auth-inline-cta">New here? <button type="button" class="auth-link-btn" onclick="renderView('register')">Create account</button></p>
+        <div id="authFeedback" class="auth-feedback" hidden></div>
+    </form>`;
+}
+
+function renderRegisterFormOnly() {
+    return `<form class="auth-form auth-register-form" onsubmit="event.preventDefault(); handleRegistration();">
+        <div class="auth-grid">
+            <label class="auth-field">
+                <span class="auth-field-label">Full Name</span>
+                <span class="auth-input-shell">
+                    ${icon('user', 'icon-sm')}
+                    <input 
+                        type="text" 
+                        id="regFullName" 
+                        class="auth-input" 
+                        placeholder="Your full name"
+                        autocomplete="name">
+                </span>
+            </label>
+
+            <label class="auth-field">
+                <span class="auth-field-label">Username</span>
+                <span class="auth-input-shell">
+                    ${icon('at', 'icon-sm')}
+                    <input 
+                        type="text" 
+                        id="regUsername" 
+                        class="auth-input" 
+                        placeholder="Choose username"
+                        autocomplete="username">
+                </span>
+            </label>
+        </div>
+
+        <label class="auth-field">
+            <span class="auth-field-label">Email</span>
+            <span class="auth-input-shell">
+                ${icon('mail', 'icon-sm')}
+                <input 
+                    type="email" 
+                    id="regEmail" 
+                    class="auth-input" 
+                    placeholder="name@example.com"
+                    autocomplete="email">
+            </span>
+        </label>
+
+        <div class="auth-grid">
+            <label class="auth-field">
+                <span class="auth-field-label">Password</span>
+                <span class="auth-input-shell">
+                    ${icon('lock', 'icon-sm')}
+                    <input 
+                        type="password" 
+                        id="regPassword" 
+                        class="auth-input" 
+                        placeholder="Create password"
+                        autocomplete="new-password">
+
+                    <button 
+                        type="button" 
+                        class="auth-ghost-icon" 
+                        onclick="togglePasswordVisibility('regPassword', this)" 
+                        aria-label="Show password">
+                        ${icon('eye', 'icon-sm')}
+                    </button>
+                </span>
+            </label>
+
+            <label class="auth-field">
+                <span class="auth-field-label">Confirm</span>
+                <span class="auth-input-shell">
+                    ${icon('lock', 'icon-sm')}
+                    <input 
+                        type="password" 
+                        id="regConfirmPassword" 
+                        class="auth-input" 
+                        placeholder="Repeat password"
+                        autocomplete="new-password">
+
+                    <button 
+                        type="button" 
+                        class="auth-ghost-icon" 
+                        onclick="togglePasswordVisibility('regConfirmPassword', this)" 
+                        aria-label="Show password">
+                        ${icon('eye', 'icon-sm')}
+                    </button>
+                </span>
+            </label>
+        </div>
+
+        <button type="submit" class="auth-primary-btn">
+            ${icon('leaf', 'icon-sm')} CREATE SECURE ACCOUNT
+        </button>
+        <div id="authFeedback" class="auth-feedback" hidden></div>
+
+        <div class="auth-secure-note">
+            ${icon('shield', 'icon-md')}
+            <span>Your information is secure with us.</span>
+        </div>
+    </form>`;
+}
+
+function renderLoginScreen() {
+    return renderAuthPortal('login');
+}
+
+function renderRegisterScreen() {
+    return renderAuthPortal('register');
+=======
 window.addTourNotePrompt = async function () {
     const note = prompt('Add a guide note for current/next tour:');
     if (!note) return;
@@ -1355,8 +1996,22 @@ function renderAuthMergedScreen(activePanel = 'login') {
             </section>
         </div>
     </div>`;
+>>>>>>> upstream/master
 }
+async function renderView(view, options = {}) {
+    const safeView = normalizeView(view);
+    const shouldUpdateHash = options.updateHash === true;
+    window.currentView = safeView;
 
+    if (shouldUpdateHash) {
+        const targetHash = `#${safeView}`;
+        if (window.location.hash !== targetHash) {
+            window.location.hash = targetHash;
+        }
+    }
+
+<<<<<<< HEAD
+=======
 function renderLoginScreen() {
     return renderAuthMergedScreen('login');
 }
@@ -1367,13 +2022,14 @@ function renderRegisterScreen() {
 
 async function renderView(view) {
     window.currentView = view;
+>>>>>>> upstream/master
     const app = document.getElementById('app');
     if (!app) return;
 
-    document.body.classList.toggle('auth-page', view === 'login' || view === 'register');
+    document.body.classList.toggle('auth-page', PUBLIC_VIEWS.has(safeView));
     
-    if (!Auth.isAuthenticated() && view !== 'login' && view !== 'register') {
-        renderView('login');
+    if (!Auth.isAuthenticated() && !PUBLIC_VIEWS.has(safeView)) {
+        navigateTo('login');
         return;
     }
 
@@ -1382,7 +2038,7 @@ async function renderView(view) {
     }
     
     let content = '';
-    switch(view) {
+    switch(safeView) {
         case 'login': app.innerHTML = renderLoginScreen(); return;
         case 'register': app.innerHTML = renderRegisterScreen(); return;
         case 'dashboard': content = await renderDashboardContent(); break;
