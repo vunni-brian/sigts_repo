@@ -588,6 +588,7 @@ class TourGuideManager {
     async getGuideDashboard() {
         const tours = await API.getToursForGuide();
         const myTours = Array.isArray(tours) ? tours : [];
+        const guideId = AppState.currentUser?.user_id;
         const todayStr = new Date().toISOString().split('T')[0];
         
         const upcoming = myTours.filter(t => t.scheduled_start?.split('T')[0] > todayStr);
