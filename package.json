@@ -1,0 +1,11 @@
+{
+  "name": "sigts",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "install:all": "npm install --workspaces"
+  }
+}

@@ -64,7 +64,10 @@ async function init() {
     registerServiceWorker();
     initHashRouting();
 
-    await Geofence.init();
+    // Never block first paint/login on geofence startup network calls.
+    Geofence.init().catch((error) => {
+        console.warn('Geofence initialization deferred:', error);
+    });
 
     const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
 
@@ -104,11 +107,14 @@ async function init() {
 
     const requestedView = window.location.hash.replace('#', '');
 
+    // Render the first screen directly (and sync hash) to avoid
+    // depending on hashchange event timing for initial paint.
     if (Auth.isAuthenticated()) {
-        navigateTo(requestedView || 'dashboard');
+        await renderView(requestedView || 'dashboard', { updateHash: true });
         return;
     }
 
-    navigateTo(requestedView === 'register' ? 'register' : 'login');}
+    await renderView(requestedView === 'register' ? 'register' : 'login', { updateHash: true });
+}
 
 init();
