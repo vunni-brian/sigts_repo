@@ -64,7 +64,10 @@ async function init() {
     registerServiceWorker();
     initHashRouting();
 
-    await Geofence.init();
+    // Never block first paint/login on geofence startup network calls.
+    Geofence.init().catch((error) => {
+        console.warn('Geofence initialization deferred:', error);
+    });
 
     const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
 
@@ -109,24 +112,25 @@ async function init() {
     if (rareAlertPollTimer) clearInterval(rareAlertPollTimer);
     rareAlertPollTimer = setInterval(() => window.refreshRareAlertBadge?.(), 20000);
 
+    // Render the first screen directly and keep role-specific defaults.
+    // This avoids depending on hashchange timing during initial paint.
     if (Auth.isAuthenticated()) {
         if (requestedView) {
-            navigateTo(requestedView);
+            await renderView(requestedView, { updateHash: true });
         } else {
             const user = Auth.getCurrentUser();
             const role = user?.role || user?.userType || 'tourist';
-            if (role === 'it_manager') {
-                navigateTo('it_dashboard');
-            } else if (role === 'guide') {
-                navigateTo('guide_dashboard');
-            } else {
-                navigateTo('dashboard');
-            }
+            const defaultView = role === 'it_manager'
+                ? 'it_dashboard'
+                : role === 'guide'
+                    ? 'guide_dashboard'
+                    : 'dashboard';
+            await renderView(defaultView, { updateHash: true });
         }
         return;
     }
 
-    navigateTo(requestedView === 'register' ? 'register' : 'login');
+    await renderView(requestedView === 'register' ? 'register' : 'login', { updateHash: true });
 }
 
 init();
