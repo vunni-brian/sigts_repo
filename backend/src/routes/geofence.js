@@ -4,6 +4,7 @@ const router = express.Router();
 const { pool } = require('../config/database');
 const { authenticateJWT } = require('../middleware/auth');
 const { readCoordinates, isInsidePark } = require('../middleware/parkGeofence');
+const { requireConsent } = require('../middleware/consent');
 
 // =====================================================
 // POST /api/geofence/validate
@@ -31,7 +32,7 @@ router.post('/validate', authenticateJWT, async (req, res) => {
 // POST /api/geofence/location-update
 // Persist user location + emit entry/exit events
 // =====================================================
-router.post('/location-update', authenticateJWT, async (req, res) => {
+router.post('/location-update', authenticateJWT, requireConsent('location_tracking'), async (req, res) => {
     const coordinates = readCoordinates(req);
     const { accuracy, speed_kmh, heading_degrees, timestamp } = req.body;
 

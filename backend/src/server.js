@@ -31,6 +31,7 @@ ensureSecurityConfiguration();
 const { authenticateJWT, authorize, ipWhitelist } = require('./middleware/auth');
 const { requireInsidePark } = require('./middleware/parkGeofence');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
+const { correlationId } = require('./middleware/correlationId');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -61,6 +62,9 @@ const tokenBlacklist = new Set();
 // =====================================================
 // MIDDLEWARE SETUP
 // =====================================================
+
+// Correlation ID must run before anything else that logs.
+app.use(correlationId());
 
 // Security middleware
 app.use(helmet({
