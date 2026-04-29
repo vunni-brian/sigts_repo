@@ -1099,7 +1099,9 @@ function showLoading() {
 }
 
 function setAuthFeedback(message, type = 'error') {
-    const node = document.getElementById('authFeedback');
+    const node = document.querySelector('.auth-merged-pane.active #authFeedback')
+        || document.querySelector('.auth-portal-main #authFeedback')
+        || document.getElementById('authFeedback');
     if (!node) return;
     if (!message) {
         node.textContent = '';
@@ -1219,7 +1221,7 @@ async function handleRegistration() {
         username: document.getElementById('regUsername')?.value,
         password: document.getElementById('regPassword')?.value,
         confirmPassword: document.getElementById('regConfirmPassword')?.value,
-        userType: 'tourist'
+        userType: document.getElementById('regUserType')?.value || 'tourist'
     });
     const message = result.message || (result.success ? 'Success! Please login.' : result.error);
     showToast(message, result.success ? 'success' : 'danger');
@@ -1524,7 +1526,7 @@ function renderAuthMergedScreen(activePanel = 'login') {
                 <h1 class="auth-title">Sign In</h1>
                 <p class="auth-subtitle">Continue your wildlife guide experience with your account.</p>
                 <p class="auth-switch">Don't have an account? <button class="auth-link-btn" onclick="renderView('register')">Create account</button></p>
-                <div class="auth-form-card">
+                <form class="auth-form-card" onsubmit="event.preventDefault(); handleLogin();">
                     <label class="auth-field">
                         <span class="auth-field-label">Email or Username</span>
                         <input type="text" id="loginUsername" class="auth-input" placeholder="Enter your email or username">
@@ -1533,11 +1535,16 @@ function renderAuthMergedScreen(activePanel = 'login') {
                         <span class="auth-field-label">Password</span>
                         <input type="password" id="loginPassword" class="auth-input" placeholder="Enter your password">
                     </label>
+                    <label class="auth-check">
+                        <input type="checkbox" id="rememberMe" checked>
+                        <span>Remember me</span>
+                    </label>
                     <div class="auth-merged-actions">
-                        <button onclick="handleLogin()" class="auth-primary-btn">Sign In</button>
-                        <button onclick="handleForgotPassword()" class="auth-merged-link">Forgot password?</button>
+                        <button type="submit" class="auth-primary-btn">Sign In</button>
+                        <button type="button" onclick="handleForgotPassword()" class="auth-merged-link">Forgot password?</button>
                     </div>
-                </div>
+                    <div id="authFeedback" class="auth-feedback" hidden></div>
+                </form>
             </section>
             <section class="auth-merged-visual" aria-hidden="true"></section>
             <section class="auth-merged-pane auth-merged-register ${activePanel === 'register' ? 'active' : ''}">
@@ -1545,7 +1552,7 @@ function renderAuthMergedScreen(activePanel = 'login') {
                 <h1 class="auth-title">Create Account</h1>
                 <p class="auth-subtitle">Build your profile and unlock tours, sightings, and park tools.</p>
                 <p class="auth-switch">Already a member? <button class="auth-link-btn" onclick="renderView('login')">Log in</button></p>
-                <div class="auth-form-card">
+                <form class="auth-form-card" onsubmit="event.preventDefault(); handleRegistration();">
                     <div class="auth-grid">
                         <label class="auth-field">
                             <span class="auth-field-label">Full Name</span>
@@ -1577,9 +1584,10 @@ function renderAuthMergedScreen(activePanel = 'login') {
                         </select>
                     </label>
                     <div class="auth-merged-actions">
-                        <button onclick="handleRegistration()" class="auth-primary-btn">Create Account</button>
+                        <button type="submit" class="auth-primary-btn">Create Account</button>
                     </div>
-                </div>
+                    <div id="authFeedback" class="auth-feedback" hidden></div>
+                </form>
             </section>
         </div>
     </div>`;}
