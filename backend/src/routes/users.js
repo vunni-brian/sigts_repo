@@ -4,6 +4,7 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { pool } = require('../config/database');
 const { authenticateJWT, authorize } = require('../middleware/auth');
+const { canViewMedicalNotes } = require('../services/medicalNotesAccess');
 
 // =====================================================
 // GET /api/users/profile
@@ -167,6 +168,162 @@ router.put('/profile', authenticateJWT, [
 // DELETE /api/users/deactivate
 // Deactivate user account
 // =====================================================
+// =====================================================
+// GET /api/users/me/consents
+// Returns the user's most recent record per consent_type.
+// =====================================================
+router.get('/me/consents', authenticateJWT, async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT DISTINCT ON (consent_type)
+                consent_type, granted, granted_at, revoked_at, policy_version
+             FROM consent_log
+             WHERE user_id = $1
+             ORDER BY consent_type, granted_at DESC`,
+            [req.user.user_id]
+        );
+        res.json({ consents: result.rows });
+    } catch (error) {
+        console.error('Get consents error:', error);
+        res.status(500).json({ error: 'Failed to fetch consents' });
+    }
+});
+
+// =====================================================
+// POST /api/users/me/consents
+// Body: { consent_type, granted, policy_version? }
+// Inserts a new immutable row reflecting the user's choice.
+// =====================================================
+router.post(
+    '/me/consents',
+    authenticateJWT,
+    [
+        body('consent_type').isIn([
+            'location_tracking',
+            'analytics',
+            'push_notifications',
+            'cultural_content_imagery'
+        ]),
+        body('granted').isBoolean(),
+        body('policy_version').optional().isString().isLength({ max: 20 })
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { consent_type, granted, policy_version } = req.body;
+        const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip || null;
+
+        try {
+            // If revoking, also stamp revoked_at on the previous active grant.
+            if (!granted) {
+                await pool.query(
+                    `UPDATE consent_log
+                     SET revoked_at = CURRENT_TIMESTAMP
+                     WHERE user_id = $1 AND consent_type = $2 AND revoked_at IS NULL`,
+                    [req.user.user_id, consent_type]
+                );
+            }
+
+            await pool.query(
+                `INSERT INTO consent_log
+                    (user_id, consent_type, granted, ip_address, user_agent, policy_version)
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [
+                    req.user.user_id,
+                    consent_type,
+                    granted,
+                    ip,
+                    req.headers['user-agent']?.slice(0, 500) || null,
+                    policy_version || null
+                ]
+            );
+
+            res.json({ success: true, consent_type, granted });
+        } catch (error) {
+            console.error('Set consent error:', error);
+            res.status(500).json({ error: 'Failed to record consent' });
+        }
+    }
+);
+
+// =====================================================
+// GET /api/users/:id/medical-notes
+// Field-level access control. Returns medical_notes only if the requesting
+// user is the tourist themselves, an IT manager, or a guide currently
+// assigned to an ongoing tour the tourist is on.
+// =====================================================
+router.get('/:id/medical-notes', authenticateJWT, async (req, res) => {
+    const targetUserId = req.params.id;
+
+    try {
+        const allowed = await canViewMedicalNotes({
+            requestingUser: req.user,
+            touristUserId: targetUserId
+        });
+
+        if (!allowed) {
+            return res.status(403).json({
+                error: 'Access denied',
+                code: 'MEDICAL_NOTES_FORBIDDEN'
+            });
+        }
+
+        const result = await pool.query(
+            `SELECT t.medical_notes, t.medical_notes_updated_at
+             FROM tourists t
+             WHERE t.user_id = $1`,
+            [targetUserId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Tourist not found' });
+        }
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Get medical notes error:', error);
+        res.status(500).json({ error: 'Failed to fetch medical notes' });
+    }
+});
+
+// =====================================================
+// PUT /api/users/me/medical-notes
+// The tourist updates their own medical notes. Only the tourist themselves
+// (or an IT manager acting on their behalf via a different endpoint) may
+// write to this field.
+// =====================================================
+router.put(
+    '/me/medical-notes',
+    authenticateJWT,
+    [body('medical_notes').isString().isLength({ max: 5000 })],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+        try {
+            const result = await pool.query(
+                `UPDATE tourists
+                 SET medical_notes = $1, medical_notes_updated_at = CURRENT_TIMESTAMP
+                 WHERE user_id = $2
+                 RETURNING medical_notes_updated_at`,
+                [req.body.medical_notes, req.user.user_id]
+            );
+
+            if (result.rowCount === 0) {
+                return res.status(404).json({ error: 'Tourist profile not found' });
+            }
+
+            res.json({ success: true, updated_at: result.rows[0].medical_notes_updated_at });
+        } catch (error) {
+            console.error('Update medical notes error:', error);
+            res.status(500).json({ error: 'Failed to update medical notes' });
+        }
+    }
+);
+
 router.delete('/deactivate', authenticateJWT, async (req, res) => {
     const userId = req.user.user_id;
 
