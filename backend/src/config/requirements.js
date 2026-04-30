@@ -19,22 +19,67 @@ const REQUIREMENTS = {
     }
 };
 
+// Boot-time environment validation. Refuses to start if required env vars
+// are missing or carry obvious placeholder values.
 function ensureSecurityConfiguration() {
     const isProd = process.env.NODE_ENV === 'production';
-    const secret = process.env.JWT_SECRET || '';
-    const isWeakSecret = 
-        !secret || 
-        secret.includes('bwindi') || 
-        secret.includes('secret') || 
-        secret.includes('change-in-production') ||
-        secret.length < 32;
+    const errors = [];
+    const warnings = [];
 
+    const placeholderFragments = [
+        'your-',
+        'change-in-production',
+        'change_in_production',
+        'changeme',
+        'replace-me',
+        'placeholder'
+    ];
+
+    const isPlaceholder = (value) => {
+        if (!value) return true;
+        const lower = value.toLowerCase();
+        return placeholderFragments.some((frag) => lower.includes(frag));
+    };
+
+    // JWT secret
+    const secret = process.env.JWT_SECRET || '';
+    const isWeakSecret =
+        !secret ||
+        isPlaceholder(secret) ||
+        secret.includes('bwindi') ||
+        secret.includes('secret') ||
+        secret.length < 32;
     if (isProd && REQUIREMENTS.security.enforceJwtSecretInProduction && isWeakSecret) {
-        throw new Error(
-            'CRITICAL SECURITY ERROR: JWT_SECRET must be explicitly set to a strong, unique value (32+ chars) in production.\n' +
-            'Generate with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"\n' +
-            'Set in environment: export JWT_SECRET="<generated-secret>"'
+        errors.push(
+            'JWT_SECRET must be a strong, unique value (32+ chars) in production. ' +
+            'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
         );
+    } else if (isWeakSecret) {
+        warnings.push('JWT_SECRET is weak or missing — fine for dev, must be replaced before production.');
+    }
+
+    // Database
+    if (!process.env.DB_HOST) errors.push('DB_HOST is required');
+    if (!process.env.DB_NAME) errors.push('DB_NAME is required');
+    if (!process.env.DB_USER) errors.push('DB_USER is required');
+    if (isProd && (!process.env.DB_PASSWORD || isPlaceholder(process.env.DB_PASSWORD))) {
+        errors.push('DB_PASSWORD must be set to a real value in production');
+    }
+
+    // Client URL
+    if (isProd && !process.env.CLIENT_URL) {
+        warnings.push('CLIENT_URL is not set; CORS will fall back to defaults.');
+    }
+
+    if (errors.length > 0) {
+        throw new Error(
+            'CONFIGURATION ERROR — refusing to start:\n  - ' + errors.join('\n  - ')
+        );
+    }
+
+    if (warnings.length > 0) {
+        // Use console here because the structured logger may not be ready yet.
+        warnings.forEach((w) => console.warn(`[config] WARNING: ${w}`));
     }
 }
 

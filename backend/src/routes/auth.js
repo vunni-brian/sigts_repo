@@ -9,7 +9,15 @@ const { REQUIREMENTS } = require('../config/requirements');
 const { authenticateJWT } = require('../middleware/auth');
 const { logger } = require('../utils/logger');
 const { sendPasswordResetEmail } = require('../services/emailService');
+const refreshTokenService = require('../services/refreshTokenService');
 const crypto = require('crypto');
+
+function clientContext(req) {
+    return {
+        ip: (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip || null,
+        userAgent: req.headers['user-agent']?.slice(0, 500) || null
+    };
+}
 
 // Get JWT secret with production enforcement
 function getJwtSecret() {
@@ -272,12 +280,14 @@ router.post('/login', [
         }
 
         if (coordinates) {
-            const insidePark = await isInsidePark(coordinates.lat, coordinates.lng);
-            if (!insidePark && !bypassGeofence) {
-                return res.status(403).json({
-                    error: 'Access denied',
-                    message: 'You must be within park boundaries to access SIGTS'
-                });
+            if (ENFORCE_PARK_GEOFENCE && !bypassGeofence) {
+                const insidePark = await isInsidePark(coordinates.lat, coordinates.lng);
+                if (!insidePark) {
+                    return res.status(403).json({
+                        error: 'Access denied',
+                        message: 'You must be within park boundaries to access SIGTS'
+                    });
+                }
             }
 
             await pool.query(
@@ -318,7 +328,11 @@ router.post('/login', [
         }
 
         const accessToken = createAccessToken(user.user_id, user.user_type);
-        const refreshToken = createRefreshToken(user.user_id, user.user_type);
+        const { token: refreshToken } = await refreshTokenService.issueNewFamily(
+            user.user_id,
+            user.user_type,
+            clientContext(req)
+        );
 
         res.json({
             success: true,
@@ -453,8 +467,21 @@ router.post('/refresh', [
 
     try {
         const { refreshToken } = req.body;
-        const decoded = jwt.verify(refreshToken, REFRESH_JWT_SECRET);
 
+        let rotated;
+        try {
+            rotated = await refreshTokenService.rotateToken(refreshToken, clientContext(req));
+        } catch (rotationError) {
+            const code = rotationError.code || 'UNKNOWN';
+            // 401 for the client; the service layer already logs reuse-detected
+            // events as warnings.
+            return res.status(401).json({
+                error: 'Invalid refresh token',
+                code
+            });
+        }
+
+        const decoded = jwt.verify(rotated.token, REFRESH_JWT_SECRET);
         const userResult = await pool.query(
             `SELECT user_id, user_type, is_active
              FROM users
@@ -463,19 +490,21 @@ router.post('/refresh', [
         );
 
         if (userResult.rows.length === 0 || !userResult.rows[0].is_active) {
+            // Revoke the family we just issued — user is gone/disabled.
+            await refreshTokenService.revokeFamily(rotated.familyId, 'user_inactive');
             return res.status(401).json({ error: 'Invalid refresh token' });
         }
 
         const user = userResult.rows[0];
         const accessToken = createAccessToken(user.user_id, user.user_type);
-        const rotatedRefreshToken = createRefreshToken(user.user_id, user.user_type);
 
         return res.json({
             success: true,
             accessToken,
-            refreshToken: rotatedRefreshToken
+            refreshToken: rotated.token
         });
     } catch (error) {
+        logger.error('Refresh handler error', { error: error.message });
         return res.status(401).json({ error: 'Invalid refresh token' });
     }
 });
@@ -610,7 +639,11 @@ router.post('/mfa/complete', [
 
         const user = userResult.rows[0];
         const accessToken = createAccessToken(user.user_id, user.user_type);
-        const refreshToken = createRefreshToken(user.user_id, user.user_type);
+        const { token: refreshToken } = await refreshTokenService.issueNewFamily(
+            user.user_id,
+            user.user_type,
+            clientContext(req)
+        );
 
         return res.json({
             success: true,
@@ -675,7 +708,11 @@ router.post('/guest', [
 
         const user = userResult.rows[0];
         const accessToken = createAccessToken(user.user_id, user.user_type);
-        const refreshToken = createRefreshToken(user.user_id, user.user_type);
+        const { token: refreshToken } = await refreshTokenService.issueNewFamily(
+            user.user_id,
+            user.user_type,
+            clientContext(req)
+        );
 
         return res.status(201).json({
             success: true,

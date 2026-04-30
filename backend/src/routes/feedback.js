@@ -3,6 +3,7 @@ const { body, validationResult, query } = require('express-validator');
 const router = express.Router();
 const { pool } = require('../config/database');
 const { authenticateJWT, authorize } = require('../middleware/auth');
+const { idempotency } = require('../middleware/idempotency');
 
 async function resolveTouristId(userId) {
     const result = await pool.query(
@@ -24,6 +25,7 @@ async function resolveGuideId(userId) {
 router.post(
     '/',
     authenticateJWT,
+    idempotency({ required: false }),
     [
         body('rating').isInt({ min: 1, max: 5 }),
         body('comment').optional().isString().isLength({ max: 2000 }),

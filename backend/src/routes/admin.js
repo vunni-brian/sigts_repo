@@ -5,6 +5,7 @@ const { body, query, validationResult } = require('express-validator');
 const { pool } = require('../config/database');
 const { authenticateJWT, authorize } = require('../middleware/auth');
 const { hashPassword } = require('../config/auth');
+const { audit } = require('../utils/audit');
 
 // All routes require IT Manager role
 router.use(authenticateJWT, authorize('it_manager'));
@@ -141,6 +142,13 @@ router.post('/users', [
             );
         }
 
+        await audit(req, {
+            action: 'user.create',
+            table_name: 'users',
+            record_id: newUser.user_id,
+            new_value: newUser
+        });
+
         res.status(201).json({
             success: true,
             user: newUser,
@@ -162,16 +170,30 @@ router.put('/users/:id', async (req, res) => {
     const { is_active, user_type, first_name, last_name, phone } = req.body;
 
     try {
-        await pool.query(
-            `UPDATE users 
+        const before = await pool.query(
+            'SELECT user_id, is_active, user_type, first_name, last_name, phone FROM users WHERE user_id = $1',
+            [id]
+        );
+
+        const updated = await pool.query(
+            `UPDATE users
              SET is_active = COALESCE($1, is_active),
                  user_type = COALESCE($2, user_type),
                  first_name = COALESCE($3, first_name),
                  last_name = COALESCE($4, last_name),
                  phone = COALESCE($5, phone)
-             WHERE user_id = $6`,
+             WHERE user_id = $6
+             RETURNING user_id, is_active, user_type, first_name, last_name, phone`,
             [is_active, user_type, first_name, last_name, phone, id]
         );
+
+        await audit(req, {
+            action: 'user.update',
+            table_name: 'users',
+            record_id: id,
+            old_value: before.rows[0] || null,
+            new_value: updated.rows[0] || null
+        });
 
         res.json({ success: true, message: 'User updated successfully' });
 
@@ -223,11 +245,18 @@ router.post('/content/:id/approve', async (req, res) => {
 
     try {
         await pool.query(
-            `UPDATE ai_content_generations 
+            `UPDATE ai_content_generations
              SET review_status = $1, review_notes = $2, reviewed_by = $3, approved_at = CURRENT_TIMESTAMP
              WHERE generation_id = $4`,
             [status, notes, req.user.user_id, id]
         );
+
+        await audit(req, {
+            action: 'content.review',
+            table_name: 'ai_content_generations',
+            record_id: id,
+            new_value: { status, notes }
+        });
 
         res.json({ success: true, message: `Content ${status}` });
 
@@ -269,10 +298,23 @@ router.put('/users/:id/deactivate', async (req, res) => {
     const { id } = req.params;
 
     try {
+        const before = await pool.query(
+            'SELECT user_id, username, is_active FROM users WHERE user_id = $1',
+            [id]
+        );
+
         await pool.query(
             'UPDATE users SET is_active = false WHERE user_id = $1',
             [id]
         );
+
+        await audit(req, {
+            action: 'user.deactivate',
+            table_name: 'users',
+            record_id: id,
+            old_value: before.rows[0] || null,
+            new_value: { ...(before.rows[0] || {}), is_active: false }
+        });
 
         res.json({ success: true, message: 'User deactivated successfully' });
 

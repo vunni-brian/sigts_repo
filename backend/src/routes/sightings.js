@@ -6,6 +6,7 @@ const multer = require('multer');
 const path = require('path');
 const { pool } = require('../config/database');
 const { authenticateJWT, authorize } = require('../middleware/auth');
+const { idempotency } = require('../middleware/idempotency');
 
 const upload = multer({ dest: 'uploads/sightings/' });
 let commentsTableEnsured = false;
@@ -76,7 +77,7 @@ function getRareRiskLevel(conservationStatus = '', observedCount = 0) {
 // POST /api/sightings
 // Report a wildlife sighting
 // =====================================================
-router.post('/', authenticateJWT, [
+router.post('/', authenticateJWT, idempotency({ required: false }), [
     body('animal_id').isUUID(),
     body('location_id').isUUID(),
     body('number_observed').isInt({ min: 1, max: 100 }),
